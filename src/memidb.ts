@@ -85,6 +85,135 @@ class MyDomStringList extends Array<string> implements DOMStringList {
 }
 
 
+
+interface AATreeNode {
+  left?: AATreeNode;
+  right?: AATreeNode;
+  level: number;
+  key: any;
+}
+
+export type AATree = AATreeNode | undefined;
+
+
+function skew(t: AATreeNode) {
+  if (t.left && t.left.level == t.level) {
+    return {
+      left: t.left.left,
+      right: t,
+      key: t.left.key,
+      level: t.level,
+    };
+  }
+  return t;
+}
+
+
+function split(t: AATreeNode) {
+  if (t.right && t.right.right && 
+      t.level == t.right.level &&
+      t.right.level == t.right.right.level) {
+    return {
+      level: t.level + 1,
+      key: t.right.key,
+      left: {
+        level: t.level,
+        key: t.key,
+        left: t.left,
+        right: t.right.left,
+      },
+      right: {
+        key: t.right.right.key,
+        left: t.right.right.left,
+        level: t.level,
+        right: t.right.right.right,
+      },
+    }
+  }
+  return t;
+}
+
+/**
+ * Non-destructively insert a new key into an AA tree.
+ */
+export function treeInsert(t: AATree, k: any): AATreeNode {
+  if (!t) {
+    return {
+      level: 0,
+      key: k,
+    }
+  }
+  const cmp = compareKeys(k, t.key);
+  if (cmp == 0) {
+    return t;
+  }
+  let r = Object.assign({}, t);
+  if (cmp == -1) {
+    r.left = treeInsert(t.left, k);
+  } else {
+    r.right = treeInsert(t.right, k);
+  }
+  return split(skew(r));
+}
+
+
+/**
+ * Check AA tree invariants.  Useful for testing.
+ */
+export function checkInvariants(t: AATree): boolean {
+  if (!t) {
+    return true;
+  }
+  throw Error("not implemented");
+}
+
+
+function adjust(t: AATreeNode): AATreeNode {
+  throw Error("not implemented");
+}
+
+function treeDeleteLargest(t: AATreeNode): { key: any, tree: AATree } {
+  if (!t.right) {
+    return { key: t.key, tree: t.left };
+  }
+  const d = treeDeleteLargest(t.right);
+  return {
+    key: d.key,
+    tree: adjust({
+      level: t.level,
+      key: t.key,
+      left: t.left,
+      right: d.tree,
+    }),
+  };
+}
+
+
+//function treeDelete(t: AATree, k: any): AATreeNode {
+//  if (!t) {
+//    return t;
+//  }
+//  const cmp = compareKeys(k, t.key);
+//  if (cmp == 0) {
+//    if (!t.left) {
+//      return t.right;
+//    }
+//    if (!t.right) {
+//      return t.left;
+//    }
+//    const d = treeDeleteLargest(t.left);
+//    return adjust({
+//      key: d.key,
+//      left: d.tree,
+//      right: t.right,
+//      level: t.level,
+//    });
+//  } else {
+//  }
+//}
+
+
+
 class MyKeyRange implements IDBKeyRange {
   static only(value: any): IDBKeyRange {
     return new MyKeyRange(value, value, false, false);
@@ -114,6 +243,11 @@ export function isKeyRange(obj: any): obj is IDBKeyRange {
   return (typeof obj === "object" &&
           "lower" in obj && "upper" in obj &&
           "lowerOpen" in obj && "upperOpen" in obj);
+}
+
+
+function compareKeys(a: any, b: any): -1|0|1 {
+  throw Error("not implemented")
 }
 
 
@@ -174,7 +308,8 @@ class MyRequest implements IDBRequest {
   constructor(public _transaction: Transaction, public runner: () => void) {
   }
 
-  callSuccess(ev: Event) {
+  callSuccess() {
+    const ev = new MyEvent("success", this);
     if (this.onsuccess) {
       this.onsuccess(ev);
     }
@@ -400,9 +535,9 @@ class MyObjectStore implements IDBObjectStore  {
       throw Error("key already exists");
     }
 
-    store.objects[stringKey] = value;
-
     const req = new MyRequest(this.transaction, () => {
+      req.source = this;
+      store.objects[stringKey] = value;
     });
     return req;
   }
@@ -416,11 +551,41 @@ class MyObjectStore implements IDBObjectStore  {
   }
 
   delete(key: any): IDBRequest {
-    throw Error("not implemented");
+    if (this.transaction.mode === "readonly") {
+      throw Error();
+    }
+    if (!this.transaction.active) {
+      throw Error();
+    }
+    if (!this.transaction.transactionDbData.stores.hasOwnProperty(this.storeName)) {
+      throw Error("object store was deleted");
+    }
+    const store = this.transaction.transactionDbData.stores[this.storeName];
+    const stringKey = stringifyKey(key);
+    const req = new MyRequest(this.transaction, () => {
+      req.source = this;
+      delete store.objects[stringifyKey];
+    });
+    return req;
   }
 
   get(key: any): IDBRequest {
-    throw Error("not implemented");
+    if (!this.transaction.active) {
+      throw Error();
+    }
+    if (!this.transaction.transactionDbData.stores.hasOwnProperty(this.storeName)) {
+      throw Error("object store was deleted");
+    }
+    if (isKeyRange(key)) {
+      throw Error("not implemented");
+    }
+    const store = this.transaction.transactionDbData.stores[this.storeName];
+    const stringKey = stringifyKey(key);
+    const req = new MyRequest(this.transaction, () => {
+      req.source = this;
+      req.result = store.objects[stringKey];
+    });
+    return req;
   }
 
   deleteIndex(indexName: string) {
@@ -904,8 +1069,7 @@ export class MemoryIDBFactory implements IDBFactory {
         let versionChangeEvt = new VersionChangeEvent(oldVersion, mydb.version, db);
         req.callOnupgradeneeded(versionChangeEvt);
       }
-      let successEvent = new MyEvent("success", db);
-      req.callSuccess(successEvent);
+      req.callSuccess();
     });
 
     this.addRequest(req);
