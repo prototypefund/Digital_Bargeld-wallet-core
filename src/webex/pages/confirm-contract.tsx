@@ -44,6 +44,8 @@ import { WalletApiError } from "../wxApi";
 
 import * as Amounts from "../../amounts";
 
+import { ToggleAnimationWarning, VisualPayment } from "./visual-payment";
+
 
 interface DetailState {
   collapsed: boolean;
@@ -84,7 +86,7 @@ class Details extends React.Component<DetailProps, DetailState> {
         <div>
           <button className="linky"
                   onClick={() => this.setState({collapsed: true} as any)}>
-            i18n.str`show fewer details`
+              {i18n.str`show fewer details`}
           </button>
           <div>
             {i18n.str`Accepted exchanges:`}
@@ -132,6 +134,12 @@ interface ContractPromptState {
   working: boolean;
   abortDone: boolean;
   abortStarted: boolean;
+  // extra state for payment visualization
+  renderAnimation: boolean;
+  firstEnter: boolean;
+  clickClose: number;
+  allowAnimation: boolean;
+  renderWarning: boolean;
 }
 
 class ContractPrompt extends React.Component<ContractPromptProps, ContractPromptState> {
@@ -152,6 +160,11 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       proposalId: props.proposalId,
       replaying: false,
       working: false,
+      renderAnimation: false,
+      firstEnter: true,
+      clickClose: 0,
+      allowAnimation: true,
+      renderWarning: false,
     };
   }
 
@@ -161,6 +174,14 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
 
   componentWillUnmount() {
     // FIXME: abort running ops
+  }
+
+  shouldComponentUpdate(nextProps: ContractPromptProps, nextState: ContractPromptState) {
+    // prevent previous close animation affect current animation
+    if (this.state.renderAnimation && nextState.renderAnimation) {
+      return false;
+    }
+    return true;
   }
 
   async update() {
@@ -233,6 +254,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       this.setState({ alreadyPaid: true, payDisabled: false, checkPayError: undefined, payStatus });
     } else {
       this.setState({ payDisabled: false, checkPayError: undefined, payStatus });
+      this.checkFirstEnterPage();
     }
   }
 
@@ -275,6 +297,57 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     this.setState({ abortDone: true });
   }
 
+  // When first enter this page, show animation
+  checkFirstEnterPage() {
+    if (this.state.firstEnter) {
+      this.setState({ firstEnter: false });
+      this.showAnimation();
+    }
+  }
+
+  showAnimation() {
+    if (this.state.allowAnimation) {
+      this.setState({ renderAnimation: true, holdCheck: true });
+    }
+    // this.setState({ renderAnimation: true, holdCheck: true });
+  }
+
+  toggleAnimation = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ allowAnimation: event.target.checked});
+
+    if (!event.target.checked) {
+      this.setState({renderWarning: true});
+    }
+  }
+
+  toggleAnimationHandler = (event: React.MouseEvent<HTMLInputElement>) => {
+    console.log("test toggle animation", event.currentTarget.value);
+    this.setState({ renderWarning: false });
+    if (event.currentTarget.value === "enableAnimation") {
+      this.setState({allowAnimation: true});
+    } else {
+      this.setState({allowAnimation: false});
+    }
+  }
+
+  waitingAnimationFinish = (delayTime: number) => {
+    window.setTimeout(this.closeAnimation, delayTime);
+  }
+
+  closeAnimation = (event: React.MouseEvent<HTMLInputElement>) => {
+    // avoid last animation auto close affect current animation
+    if (event === undefined) {
+      if (this.state.clickClose > 0) {
+        this.setState({ clickClose: this.state.clickClose - 1 });
+      } else {
+        this.setState({ renderAnimation: false, holdCheck: false });
+      }
+    } else {
+      this.setState({ clickClose: this.state.clickClose + 1 });
+      this.setState({ renderAnimation: false, holdCheck: false });
+    }
+  }
+
 
   render() {
     if (this.props.contractUrl === undefined && this.props.proposalId === undefined) {
@@ -299,6 +372,44 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     const amount = <strong>{renderAmount(Amounts.parseOrThrow(c.amount))}</strong>;
     console.log("payStatus", this.state.payStatus);
 
+    // Siyu: get total amount, using for payment visualization
+    let visualAnimation = null;
+    if (this.state.renderAnimation) {
+        const baseAmount = Amounts.parseOrThrow(c.amount);
+        const totalAmount = {
+            currency: baseAmount.currency,
+            value: baseAmount.value * Amounts.fractionalBase + baseAmount.fraction,
+        }
+        if (this.state.payStatus && this.state.payStatus.coinSelection) {
+            const additionFee = this.state.payStatus.coinSelection.totalFees;
+            totalAmount.value += additionFee.value * Amounts.fractionalBase + additionFee.fraction;
+        }
+        visualAnimation = (
+          <VisualPayment value={ totalAmount.value }
+                         currency={ totalAmount.currency }
+                         animationFinish={this.waitingAnimationFinish}
+                         closeAnimation={this.closeAnimation}/>
+        );
+    }
+
+    let toggleAnimationWarning = null;
+    if (this.state.renderWarning) {
+      toggleAnimationWarning = (
+        <ToggleAnimationWarning
+          enableAnimation={this.toggleAnimationHandler}
+          disableAnimation={this.toggleAnimationHandler}/>
+      );
+    }
+
+    // Add button for show animation again
+    const ShowAnimationAgainButton = () => (
+        <button className="pure-button button-secondary"
+                onClick={() => this.showAnimation()}
+                disabled={!this.state.allowAnimation}>
+            Show Visualization
+        </button>
+    );
+
     let products = null;
     if (c.products.length) {
       products = (
@@ -321,20 +432,34 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       </button>
     );
 
+    // const WorkingButton = () => (
+    //   <div>
+    //   <button className="pure-button button-success"
+    //           disabled={this.state.payDisabled}
+    //           onClick={() => this.doPayment()}>
+    //     <span><object className="svg-icon svg-baseline" data="/img/spinner-bars.svg" /> </span>
+    //     {i18n.str`Submitting payment`}
+    //   </button>
+    //   </div>
+    // );
+
+    // inorder to make workingbutton and show again button in one line, remove wrapping <div>
     const WorkingButton = () => (
-      <div>
-      <button className="pure-button button-success"
-              disabled={this.state.payDisabled}
-              onClick={() => this.doPayment()}>
-        <span><object className="svg-icon svg-baseline" data="/img/spinner-bars.svg" /> </span>
-        {i18n.str`Submitting payment`}
-      </button>
-      </div>
+        <button className="pure-button button-success"
+                disabled={this.state.payDisabled}
+                onClick={() => this.doPayment()}>
+          <span><object className="svg-icon svg-baseline" data="/img/spinner-bars.svg" /> </span>
+          {i18n.str`Submitting payment`}
+        </button>
     );
 
     const ConfirmPayDialog = () => (
       <div>
         {this.state.working ? WorkingButton() : ConfirmButton()}
+        &nbsp;
+        { ShowAnimationAgainButton() }
+        <br/>
+        <input type="checkbox" onChange={this.toggleAnimation} checked={this.state.allowAnimation}/>Show Animation
         <div>
           {(this.state.alreadyPaid
             ? <p className="okaybox">
@@ -389,6 +514,8 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
             ? PayErrorDialog()
             : ConfirmPayDialog()
           }
+          {visualAnimation}
+          {toggleAnimationWarning}
         </div>
     );
   }
