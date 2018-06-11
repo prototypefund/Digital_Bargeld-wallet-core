@@ -20,7 +20,7 @@
  * @author Siyu Lei
  */
 
-
+import * as i18n from "../../i18n";
 import * as React from "react";
 import * as Amounts from "../../amounts";
 
@@ -79,7 +79,7 @@ const MoneyCard = (props: MoneyCardPros) => {
       border: "1px solid black",
       borderRadius: "0.5em",
       zIndex: 200,
-      padding: "1em 0.5em",
+      //padding: "1em 0.5em",
       width: "5.5em",
       position: "absolute",
       left: "10%",
@@ -91,7 +91,9 @@ const MoneyCard = (props: MoneyCardPros) => {
       animationDuration: props.animationDurationTime + "ms",
       animationDelay: props.animationDelayTime + "ms",
     }}>
-      {props.value + " " + props.currency}
+      <i18n.Translate wrap="p">
+        <span>{props.value + " " + props.currency}</span>
+      </i18n.Translate>
     </div>
   );
 }
@@ -105,7 +107,12 @@ interface VisualPaymentProps {
 
 export const VisualPayment = (props: VisualPaymentProps) => {
   // set denomination and its corresponding delay time
-  const denominations = [100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01];
+  let denominations = [100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01];
+  if (props.currency === "USD") {
+    denominations = [100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.01];
+  } else if (props.currency === "EUR") {
+    denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
+  }
   const maxDelayTime = 3000;
   const delayDiff = 200;
   const denominationDelay: number[] = [];
@@ -163,7 +170,9 @@ export const VisualPayment = (props: VisualPaymentProps) => {
         width: "60%",
         height: "40%",
       }}>
-        <h2>What you will cost: {props.value / Amounts.fractionalBase + " " + props.currency}</h2>
+        <i18n.Translate wrap="h2">
+          What you will cost: <span>{props.value / Amounts.fractionalBase + " " + props.currency}</span>
+        </i18n.Translate>
         {listItems}
         <button className="pure-button button-destructive"
                 style={{
@@ -171,7 +180,11 @@ export const VisualPayment = (props: VisualPaymentProps) => {
                   top: "80%",
                   right: "5%",
                 }}
-                onClick={props.closeAnimation} >Close</button>
+                onClick={props.closeAnimation} >
+          <i18n.Translate wrap="span">
+            Close
+          </i18n.Translate>
+        </button>
       </div>
     </div>
   );
@@ -192,16 +205,28 @@ export const ToggleAnimationWarning = (props: ToggleAnimationWarningProps) => {
         paddingLeft: "1em",
         paddingRight: "1em",
       }}>
-        <h2>You will disable payment visualization</h2>
-        <p>Most people spend more money when payment is easy. You might be an exception,
-          or you might be so rich it makes no difference. <br />Are you sure you want to turn this off?</p>
+        <i18n.Translate wrap="h2">
+          You will disable payment visualization
+        </i18n.Translate>
+        <i18n.Translate wrap="p">
+        Most people spend more money when payment is easy. You might be an exception,
+          or you might be so rich it makes no difference. <br />Are you sure you want to turn this off?
+        </i18n.Translate>
         <button className="pure-button button-warning"
                 value="disableAnimation"
-                onClick={props.disableAnimation}>Accept</button>
+                onClick={props.disableAnimation}>
+          <i18n.Translate wrap="span">
+            Accept
+          </i18n.Translate>
+        </button>
         &nbsp;
         <button className="pure-button button-secondary"
                 value="enableAnimation"
-                onClick={props.enableAnimation}>Cancel</button>
+                onClick={props.enableAnimation}>
+          <i18n.Translate wrap="span">
+            Cancel
+          </i18n.Translate>
+        </button>
       </div>
     </div>
   );

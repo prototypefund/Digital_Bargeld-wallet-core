@@ -383,6 +383,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
         if (this.state.payStatus && this.state.payStatus.coinSelection) {
             const additionFee = this.state.payStatus.coinSelection.totalFees;
             totalAmount.value += additionFee.value * Amounts.fractionalBase + additionFee.fraction;
+            // totalAmount.value += 177 * Amounts.fractionalBase + additionFee.fraction;
         }
         visualAnimation = (
           <VisualPayment value={ totalAmount.value }
