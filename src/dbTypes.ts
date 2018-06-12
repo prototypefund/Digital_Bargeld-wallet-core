@@ -906,6 +906,11 @@ export interface CoinsReturnRecord {
   wire: any;
 }
 
+export interface UserConfiguration {
+  operation: string;
+  toggle: boolean;
+}
+
 
 /* tslint:disable:completed-docs */
 
@@ -1019,6 +1024,7 @@ export namespace Stores {
   export const purchases = new PurchasesStore();
   export const tips = new TipsStore();
   export const senderWires = new SenderWiresStore();
+  export const userConfiguration = new Store<UserConfiguration>("userConfiguration", {keyPath: "operation"});
 }
 
 /* tslint:enable:completed-docs */
