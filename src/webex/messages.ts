@@ -205,6 +205,14 @@ export interface MessageMap {
     request: { contractTermsHash: string }
     response: void;
   };
+  "get-user-config": {
+    request: { operation: string }
+    response: dbTypes.UserConfiguration;
+  };
+  "update-user-config": {
+    request: { userConfiguration: dbTypes.UserConfiguration }
+    response: void;
+  };
 }
 
 /**

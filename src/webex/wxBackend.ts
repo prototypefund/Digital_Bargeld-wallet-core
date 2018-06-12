@@ -335,6 +335,15 @@ function handleMessage(sender: MessageSender,
       talerPay(detail, senderUrl, tabId);
       return;
     }
+    case "get-user-config": {
+      if (typeof detail.operation !== "string") {
+        return Promise.reject(Error("operation missing"));
+      }
+      return needsWallet().getUserConfig(detail.operation);
+    }
+    case "update-user-config": {
+      return needsWallet().updateUserConfig(detail.userConfiguration);
+    }
     default:
       // Exhaustiveness check.
       // See https://www.typescriptlang.org/docs/handbook/advanced-types.html

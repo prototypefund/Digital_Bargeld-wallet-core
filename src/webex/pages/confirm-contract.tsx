@@ -222,6 +222,15 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     this.checkPayment();
     const exchanges = await wxApi.getExchanges();
     this.setState({ exchanges });
+
+    // get user configuration and set allow animation
+    const config = await wxApi.getUserConfig("toggleAnimation");
+    if (config === null || config.toggle) {
+      this.setState({ allowAnimation: true });
+    } else {
+      this.setState({ allowAnimation: false });
+    }
+    console.log("test indexedDB", config);
   }
 
   async checkPayment() {
@@ -309,24 +318,27 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     if (this.state.allowAnimation) {
       this.setState({ renderAnimation: true, holdCheck: true });
     }
-    // this.setState({ renderAnimation: true, holdCheck: true });
   }
 
   toggleAnimation = (event: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({ allowAnimation: event.target.checked});
-
+    this.setState({ allowAnimation: event.target.checked });
+    // update indexedDB for user configuration
+    wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: event.target.checked });
     if (!event.target.checked) {
-      this.setState({renderWarning: true});
+      this.setState({ renderWarning: true });
     }
   }
 
   toggleAnimationHandler = (event: React.MouseEvent<HTMLInputElement>) => {
-    console.log("test toggle animation", event.currentTarget.value);
     this.setState({ renderWarning: false });
     if (event.currentTarget.value === "enableAnimation") {
       this.setState({allowAnimation: true});
+      // update indexedDB for user configuration
+      wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: true });
     } else {
       this.setState({allowAnimation: false});
+      // update indexedDB for user configuration
+      wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: false});
     }
   }
 
@@ -372,7 +384,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     const amount = <strong>{renderAmount(Amounts.parseOrThrow(c.amount))}</strong>;
     console.log("payStatus", this.state.payStatus);
 
-    // Siyu: get total amount, using for payment visualization
+    // get total amount, using for payment visualization
     let visualAnimation = null;
     if (this.state.renderAnimation) {
         const baseAmount = Amounts.parseOrThrow(c.amount);
@@ -498,7 +510,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
           <i18n.Translate wrap="p">
             The merchant{" "}<span>{merchantName}</span> offers you to purchase:
           </i18n.Translate>
-          <div style={{"text-align": "center"}}>
+          <div style={{textAlign: "center"}}>
             <strong>{c.summary}</strong>
           </div>
           <strong></strong>

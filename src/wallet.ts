@@ -68,7 +68,7 @@ import {
   ReserveRecord,
   Stores,
   TipRecord,
-  WireFee,
+  WireFee, UserConfiguration,
 } from "./dbTypes";
 import {
   Auditor,
@@ -3033,5 +3033,15 @@ export class Wallet {
 
   clearNotification(): void {
     this.badge.clearNotification();
+  }
+
+  async getUserConfig(operation: string): Promise<UserConfiguration|undefined> {
+    const config = await this.q().get(Stores.userConfiguration, operation);
+    return config;
+  }
+
+  async  updateUserConfig(userConfiguration: UserConfiguration): Promise<void> {
+    await this.q().put(Stores.userConfiguration, userConfiguration).finish();
+    this.notifier.notify();
   }
 }

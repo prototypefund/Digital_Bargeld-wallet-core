@@ -31,7 +31,7 @@ import {
   PreCoinRecord,
   ProposalDownloadRecord,
   PurchaseRecord,
-  ReserveRecord,
+  ReserveRecord, UserConfiguration,
 } from "../dbTypes";
 import {
   CheckPayResult,
@@ -391,4 +391,12 @@ export function acceptRefund(refundUrl: string): Promise<string> {
  */
 export function abortFailedPayment(contractTermsHash: string) {
   return callBackend("abort-failed-payment", { contractTermsHash });
+}
+
+export function getUserConfig(operation: string): Promise<UserConfiguration> {
+  return callBackend("get-user-config", { operation });
+}
+
+export function updateUserConfig(userConfiguration: UserConfiguration): Promise<void> {
+  return callBackend("update-user-config", { userConfiguration });
 }
