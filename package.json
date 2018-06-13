@@ -60,5 +60,8 @@
     "vinyl-fs": "^2.4.3",
     "webpack": "^3.5.4",
     "webpack-merge": "^4.1.0"
+  },
+  "dependencies": {
+    "react-tabs": "^2.2.2"
   }
 }
