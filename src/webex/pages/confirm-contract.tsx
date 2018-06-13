@@ -44,7 +44,7 @@ import { WalletApiError } from "../wxApi";
 
 import * as Amounts from "../../amounts";
 
-import { ToggleAnimationWarning, VisualPayment } from "./visual-payment";
+import { ToggleAnimationWarning, VisualPayment, TrackMoney} from "./visual-payment";
 
 
 interface DetailState {
@@ -140,6 +140,7 @@ interface ContractPromptState {
   clickClose: number;
   allowAnimation: boolean;
   renderWarning: boolean;
+  renderTrackingRecord: boolean;
 }
 
 class ContractPrompt extends React.Component<ContractPromptProps, ContractPromptState> {
@@ -165,6 +166,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       clickClose: 0,
       allowAnimation: true,
       renderWarning: false,
+      renderTrackingRecord: false,
     };
   }
 
@@ -360,6 +362,19 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     }
   }
 
+  testTrackMoneyRecord = () => {
+    this.setState({ renderTrackingRecord: true });
+  }
+
+  procssPaymentInTrackingRecord = (event: React.MouseEvent<HTMLInputElement>) => {
+    if (event.currentTarget.value === "pay") {
+      console.log("test", "pay");
+    } else {
+      console.log("test", "cancel");
+    }
+    this.setState({ renderTrackingRecord: false });
+  }
+
 
   render() {
     if (this.props.contractUrl === undefined && this.props.proposalId === undefined) {
@@ -384,25 +399,35 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     const amount = <strong>{renderAmount(Amounts.parseOrThrow(c.amount))}</strong>;
     console.log("payStatus", this.state.payStatus);
 
-    // get total amount, using for payment visualization
+    // get total amount, using for payment visualization and tracking money
+    const baseAmount = Amounts.parseOrThrow(c.amount);
+    const totalAmount = {
+      currency: baseAmount.currency,
+      value: baseAmount.value * Amounts.fractionalBase + baseAmount.fraction,
+    }
+    if (this.state.payStatus && this.state.payStatus.coinSelection) {
+      const additionFee = this.state.payStatus.coinSelection.totalFees;
+      totalAmount.value += additionFee.value * Amounts.fractionalBase + additionFee.fraction;
+      // totalAmount.value += 177 * Amounts.fractionalBase + additionFee.fraction;
+    }
+
+    // get visual animation
     let visualAnimation = null;
     if (this.state.renderAnimation) {
-        const baseAmount = Amounts.parseOrThrow(c.amount);
-        const totalAmount = {
-            currency: baseAmount.currency,
-            value: baseAmount.value * Amounts.fractionalBase + baseAmount.fraction,
-        }
-        if (this.state.payStatus && this.state.payStatus.coinSelection) {
-            const additionFee = this.state.payStatus.coinSelection.totalFees;
-            totalAmount.value += additionFee.value * Amounts.fractionalBase + additionFee.fraction;
-            // totalAmount.value += 177 * Amounts.fractionalBase + additionFee.fraction;
-        }
         visualAnimation = (
           <VisualPayment value={ totalAmount.value }
                          currency={ totalAmount.currency }
                          animationFinish={this.waitingAnimationFinish}
                          closeAnimation={this.closeAnimation}/>
         );
+    }
+
+    // get tracking record
+    let trackingRecod = null;
+    if (this.state.renderTrackingRecord) {
+      trackingRecod = (
+        <TrackMoney value={totalAmount.value} currency={totalAmount.currency} buttonHandler={this.procssPaymentInTrackingRecord}/>
+      );
     }
 
     let toggleAnimationWarning = null;
@@ -529,6 +554,9 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
           }
           {visualAnimation}
           {toggleAnimationWarning}
+          {/*test button for show tracking money record*/}
+          <button className="pure-button" onClick={() => this.testTrackMoneyRecord()}>Test</button>
+          {trackingRecod}
         </div>
     );
   }

@@ -23,6 +23,7 @@
 import * as i18n from "../../i18n";
 import * as React from "react";
 import * as Amounts from "../../amounts";
+import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
 
 const modelAnimationDuration = 800;
 
@@ -44,7 +45,7 @@ const modelContentStyle = {
   padding: 0,
   border: "1px solid black",
   borderRadius: "0.5em",
-  textAlign: "center",
+  // textAlign: "center",
   // opacity: 0,
   animationName: "fadeIn",
   animationDuration: modelAnimationDuration + "ms",
@@ -169,6 +170,7 @@ export const VisualPayment = (props: VisualPaymentProps) => {
         ...modelContentStyle,
         width: "60%",
         height: "40%",
+        textAlign: "center",
       }}>
         <i18n.Translate wrap="h2">
           What you will cost: <span>{props.value / Amounts.fractionalBase + " " + props.currency}</span>
@@ -201,6 +203,7 @@ export const ToggleAnimationWarning = (props: ToggleAnimationWarningProps) => {
       <div style={{
         ...modelContentStyle,
         width: "50%",
+        textAlign: "center",
         paddingBottom: "1em",
         paddingLeft: "1em",
         paddingRight: "1em",
@@ -227,6 +230,94 @@ export const ToggleAnimationWarning = (props: ToggleAnimationWarningProps) => {
             Cancel
           </i18n.Translate>
         </button>
+      </div>
+    </div>
+  );
+}
+
+interface RecordTabProps {
+  value: number;
+  currency: string;
+}
+
+const RecordTab = (props: RecordTabProps) => {
+  return (
+    <Tabs>
+      <TabList>
+        <Tab>
+          One day
+        </Tab>
+        <Tab>
+          One week
+        </Tab>
+        <Tab>
+          One month
+        </Tab>
+        <Tab>
+          Half year
+        </Tab>
+        <Tab>
+          One year
+        </Tab>
+      </TabList>
+      <TabPanel>
+        In last one day, you cost is: <strong>0.8 KUDOS</strong>. <br/>
+        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
+        After this payment, you total cost in last one day will be: <strong>1.4 KUDOS</strong>.
+      </TabPanel>
+      <TabPanel>
+        In last one day, you cost is: <strong>1.8 KUDOS</strong>. <br/>
+        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
+        After this payment, you total cost in last one day will be: <strong>2.4 KUDOS</strong>.
+      </TabPanel>
+      <TabPanel>
+        In last one day, you cost is: <strong>2.8 KUDOS</strong>. <br/>
+        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
+        After this payment, you total cost in last one day will be: <strong>3.4 KUDOS</strong>.
+      </TabPanel>
+      <TabPanel>
+        In last one day, you cost is: <strong>3.8 KUDOS</strong>. <br/>
+        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
+        After this payment, you total cost in last one day will be: <strong>4.4 KUDOS</strong>.
+      </TabPanel>
+      <TabPanel>
+        In last one day, you cost is: <strong>4.8 KUDOS</strong>. <br/>
+        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
+        After this payment, you total cost in last one day will be: <strong>5.4 KUDOS</strong>.
+      </TabPanel>
+    </Tabs>
+  );
+}
+
+interface TrackMoneyPros {
+  buttonHandler: (event: React.MouseEvent<HTMLInputElement>) => void;
+  value: number;
+  currency: string;
+}
+
+export const TrackMoney = (props: TrackMoneyPros) => {
+  return (
+    <div style={backDropStyle}>
+      <div style={{
+        ...modelContentStyle,
+        width: "50%",
+        padding: "1em",
+      }}>
+        <RecordTab value={props.value} currency={props.currency} />
+        <div style={{
+          textAlign: "center",
+          marginTop: "1em",
+        }}>
+          <button className="pure-button button-success"
+                  value="pay"
+                  onClick={props.buttonHandler}>
+            Pay</button>
+          &nbsp;
+          <button className="pure-button button-secondary"
+                  value="cancel"
+                  onClick={props.buttonHandler}>
+            Cancel</button>
+        </div>
       </div>
     </div>
   );
