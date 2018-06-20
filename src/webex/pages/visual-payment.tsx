@@ -20,50 +20,18 @@
  * @author Siyu Lei
  */
 
+/**
+ * Imports.
+ */
 import * as i18n from "../../i18n";
+
 import * as React from "react";
+
+import { Modal, ModelAnimationDuration } from "./modal";
+
+import "../style/animation.css";
+
 import * as Amounts from "../../amounts";
-import { Tab, Tabs, TabList, TabPanel } from "react-tabs";
-
-const modelAnimationDuration = 800;
-
-const backDropStyle = {
-  position: "fixed" as "fixed",
-  width: "100vw",
-  height: "100vh",
-  padding: "20vh 0",
-  left: 0,
-  top: 0,
-  zIndex: 100,
-  backgroundColor: "rgba(0, 0, 0, 0.5)",
-}
-
-const modelContentStyle = {
-  position: "relative" as "relative",
-  backgroundColor: "white",
-  margin: "auto",
-  padding: 0,
-  border: "1px solid black",
-  borderRadius: "0.5em",
-  // textAlign: "center",
-  // opacity: 0,
-  animationName: "fadeIn",
-  animationDuration: modelAnimationDuration + "ms",
-}
-
-// const Backdrop = () => {
-//   return (
-//     <div style={{
-//       position: "fixed",
-//       width: "100vw",
-//       height: "100vh",
-//       left: 0,
-//       top: 0,
-//       zIndex: 100,
-//       backgroundColor: "rgba(0, 0, 0, 0.5)",
-//     }}></div>
-//   );
-// }
 
 interface MoneyCardPros {
   key: number;
@@ -73,31 +41,33 @@ interface MoneyCardPros {
   animationDelayTime: number;
 }
 
+/**
+ * Generate single money card for payment visualization.
+ */
 const MoneyCard = (props: MoneyCardPros) => {
   console.log("MoneyCardDelay", props.animationDelayTime);
   return (
     <div style={{
+      animationDelay: props.animationDelayTime + "ms",
+      animationDuration: props.animationDurationTime + "ms",
+      animationName: "fadeInAndOut",
+      backgroundColor: "white",
       border: "1px solid black",
       borderRadius: "0.5em",
-      zIndex: 200,
-      //padding: "1em 0.5em",
-      width: "5.5em",
-      position: "absolute",
       left: "10%",
-      top: "40%",
       opacity: 0,
-      backgroundColor: "white",
+      position: "absolute",
       textAlign: "center",
-      animationName: "fadeInAndOut",
-      animationDuration: props.animationDurationTime + "ms",
-      animationDelay: props.animationDelayTime + "ms",
+      top: "40%",
+      width: "5.5em",
+      zIndex: 200,
     }}>
       <i18n.Translate wrap="p">
         <span>{props.value + " " + props.currency}</span>
       </i18n.Translate>
     </div>
   );
-}
+};
 
 interface VisualPaymentProps {
   value: number;
@@ -106,6 +76,10 @@ interface VisualPaymentProps {
   closeAnimation: (event: React.MouseEvent<HTMLInputElement>) => void;
 }
 
+/**
+ * According to value and currency that passed in, generate a list of denomination,
+ * and use MoneyCard to generate payment visualization.
+ */
 export const VisualPayment = (props: VisualPaymentProps) => {
   // set denomination and its corresponding delay time
   let denominations = [100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01];
@@ -135,7 +109,7 @@ export const VisualPayment = (props: VisualPaymentProps) => {
 
   // get list of html element for animation
   // first set a tiny delay time for animation plus the modelbox animation time
-  let totalDelayTime = modelAnimationDuration + 500;
+  let totalDelayTime = ModelAnimationDuration + 500;
   // first create html element then add totalDelay time
   const listItems = moneyList.map( (value, index) => {
     const MoneyCardItem = (
@@ -151,26 +125,11 @@ export const VisualPayment = (props: VisualPaymentProps) => {
   console.log("totalDelay", totalDelayTime);
   props.animationFinish(totalDelayTime);
 
-  // return (
-  //   <div style={{
-  //     position: "fixed",
-  //     width: "60vw",
-  //     top: "35%",
-  //     left: "20%",
-  //     textAlign: "center",
-  //   }}>
-  //     <h3>What you will cost</h3>
-  //     {listItems}
-  //     <Backdrop />
-  //   </div>
-  // );
   return (
-    <div style={backDropStyle}>
+    <Modal>
       <div style={{
-        ...modelContentStyle,
-        width: "60%",
-        height: "40%",
-        textAlign: "center",
+        height: "30vh",
+        width: "60vw",
       }}>
         <i18n.Translate wrap="h2">
           What you will cost: <span>{props.value / Amounts.fractionalBase + " " + props.currency}</span>
@@ -179,8 +138,8 @@ export const VisualPayment = (props: VisualPaymentProps) => {
         <button className="pure-button button-destructive"
                 style={{
                   position: "absolute" as "absolute",
-                  top: "80%",
                   right: "5%",
+                  top: "80%",
                 }}
                 onClick={props.closeAnimation} >
           <i18n.Translate wrap="span">
@@ -188,9 +147,9 @@ export const VisualPayment = (props: VisualPaymentProps) => {
           </i18n.Translate>
         </button>
       </div>
-    </div>
+    </Modal>
   );
-}
+};
 
 interface ToggleAnimationWarningProps {
   enableAnimation: (event: React.MouseEvent<HTMLInputElement>) => void;
@@ -199,127 +158,30 @@ interface ToggleAnimationWarningProps {
 
 export const ToggleAnimationWarning = (props: ToggleAnimationWarningProps) => {
   return (
-    <div style={backDropStyle}>
-      <div style={{
-        ...modelContentStyle,
-        width: "50%",
-        textAlign: "center",
-        paddingBottom: "1em",
-        paddingLeft: "1em",
-        paddingRight: "1em",
-      }}>
-        <i18n.Translate wrap="h2">
-          You will disable payment visualization
+    <Modal>
+      <i18n.Translate wrap="h2">
+        You will disable payment visualization
+      </i18n.Translate>
+      <i18n.Translate wrap="p">
+        Most people spend more money when payment is easy. <br />
+        You might be an exception, or you might be so rich it makes no difference. <br />
+        Are you sure you want to turn this off?
+      </i18n.Translate>
+      <button className="pure-button button-warning"
+              value="disableAnimation"
+              onClick={props.disableAnimation}>
+        <i18n.Translate wrap="span">
+          Accept
         </i18n.Translate>
-        <i18n.Translate wrap="p">
-        Most people spend more money when payment is easy. You might be an exception,
-          or you might be so rich it makes no difference. <br />Are you sure you want to turn this off?
+      </button>
+      &nbsp;
+      <button className="pure-button button-secondary"
+              value="enableAnimation"
+              onClick={props.enableAnimation}>
+        <i18n.Translate wrap="span">
+          Cancel
         </i18n.Translate>
-        <button className="pure-button button-warning"
-                value="disableAnimation"
-                onClick={props.disableAnimation}>
-          <i18n.Translate wrap="span">
-            Accept
-          </i18n.Translate>
-        </button>
-        &nbsp;
-        <button className="pure-button button-secondary"
-                value="enableAnimation"
-                onClick={props.enableAnimation}>
-          <i18n.Translate wrap="span">
-            Cancel
-          </i18n.Translate>
-        </button>
-      </div>
-    </div>
+      </button>
+    </Modal>
   );
-}
-
-interface RecordTabProps {
-  value: number;
-  currency: string;
-}
-
-const RecordTab = (props: RecordTabProps) => {
-  return (
-    <Tabs>
-      <TabList>
-        <Tab>
-          One day
-        </Tab>
-        <Tab>
-          One week
-        </Tab>
-        <Tab>
-          One month
-        </Tab>
-        <Tab>
-          Half year
-        </Tab>
-        <Tab>
-          One year
-        </Tab>
-      </TabList>
-      <TabPanel>
-        In last one day, you cost is: <strong>0.8 KUDOS</strong>. <br/>
-        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
-        After this payment, you total cost in last one day will be: <strong>1.4 KUDOS</strong>.
-      </TabPanel>
-      <TabPanel>
-        In last one day, you cost is: <strong>1.8 KUDOS</strong>. <br/>
-        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
-        After this payment, you total cost in last one day will be: <strong>2.4 KUDOS</strong>.
-      </TabPanel>
-      <TabPanel>
-        In last one day, you cost is: <strong>2.8 KUDOS</strong>. <br/>
-        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
-        After this payment, you total cost in last one day will be: <strong>3.4 KUDOS</strong>.
-      </TabPanel>
-      <TabPanel>
-        In last one day, you cost is: <strong>3.8 KUDOS</strong>. <br/>
-        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
-        After this payment, you total cost in last one day will be: <strong>4.4 KUDOS</strong>.
-      </TabPanel>
-      <TabPanel>
-        In last one day, you cost is: <strong>4.8 KUDOS</strong>. <br/>
-        This payment will cost you: <strong>{props.value / Amounts.fractionalBase + " " + props.currency }</strong>. <br/>
-        After this payment, you total cost in last one day will be: <strong>5.4 KUDOS</strong>.
-      </TabPanel>
-    </Tabs>
-  );
-}
-
-interface TrackMoneyPros {
-  buttonHandler: (event: React.MouseEvent<HTMLInputElement>) => void;
-  value: number;
-  currency: string;
-}
-
-export const TrackMoney = (props: TrackMoneyPros) => {
-  return (
-    <div style={backDropStyle}>
-      <div style={{
-        ...modelContentStyle,
-        width: "50%",
-        padding: "1em",
-      }}>
-        <RecordTab value={props.value} currency={props.currency} />
-        <div style={{
-          textAlign: "center",
-          marginTop: "1em",
-        }}>
-          <button className="pure-button button-success"
-                  value="pay"
-                  onClick={props.buttonHandler}>
-            Pay</button>
-          &nbsp;
-          <button className="pure-button button-secondary"
-                  value="cancel"
-                  onClick={props.buttonHandler}>
-            Cancel</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
+};

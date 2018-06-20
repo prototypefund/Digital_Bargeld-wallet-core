@@ -213,6 +213,10 @@ export interface MessageMap {
     request: { userConfiguration: dbTypes.UserConfiguration }
     response: void;
   };
+  "get-payment-statistic": {
+    request: { timePeriod: string }
+    response: { history: walletTypes.HistoryRecord[]};
+  };
 }
 
 /**

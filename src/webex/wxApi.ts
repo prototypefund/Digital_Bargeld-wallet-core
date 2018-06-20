@@ -36,6 +36,7 @@ import {
 import {
   CheckPayResult,
   ConfirmPayResult,
+  HistoryRecord,
   ReserveCreationInfo,
   SenderWireInfos,
   TipStatus,
@@ -399,4 +400,8 @@ export function getUserConfig(operation: string): Promise<UserConfiguration> {
 
 export function updateUserConfig(userConfiguration: UserConfiguration): Promise<void> {
   return callBackend("update-user-config", { userConfiguration });
+}
+
+export function getPaymentStatistic(timePeriod: string): Promise<{ history: HistoryRecord[] }> {
+  return callBackend("get-payment-statistic", { timePeriod });
 }

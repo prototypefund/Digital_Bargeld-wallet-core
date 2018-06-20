@@ -28,6 +28,10 @@ module.exports = function (env) {
           loader: 'awesome-typescript-loader',
           exclude: /node_modules/,
           exclude: /taler-emscripten-lib/,
+        },
+        {
+          test: /\.css$/,
+          use: [ 'style-loader', 'css-loader']
         }
       ]
     },
@@ -80,6 +84,7 @@ module.exports = function (env) {
       "show-db": "./src/webex/pages/show-db.ts",
       "tip": "./src/webex/pages/tip.tsx",
       "tree": "./src/webex/pages/tree.tsx",
+      "user-configuration": "./src/webex/pages/user-configuration.tsx",
     },
     plugins: [
       new webpack.optimize.CommonsChunkPlugin({

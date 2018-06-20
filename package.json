@@ -25,6 +25,8 @@
     "@types/moment": "^2.13.0",
     "@types/react": "^16.0.2",
     "@types/react-dom": "^16.0.0",
+    "@types/react-tabs": "^1.0.4",
+    "@types/recharts": "^1.0.23",
     "ava": "^0.24.0",
     "awesome-typescript-loader": "^3.2.2",
     "axios": "^0.16.2",
@@ -49,6 +51,8 @@
     "pogen": "file:tooling/pogen/",
     "react": "^16.0.0",
     "react-dom": "^16.0.0",
+    "react-tabs": "^2.2.2",
+    "recharts": "^1.0.0-beta.10",
     "structured-clone": "^0.2.2",
     "through2": "^2.0.1",
     "tslint": "^5.3.2",
@@ -60,9 +64,5 @@
     "vinyl-fs": "^2.4.3",
     "webpack": "^3.5.4",
     "webpack-merge": "^4.1.0"
-  },
-  "dependencies": {
-    "@types/react-tabs": "^1.0.4",
-    "react-tabs": "^2.2.2"
   }
 }

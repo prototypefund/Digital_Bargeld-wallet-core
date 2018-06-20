@@ -390,6 +390,13 @@ export interface RefreshPreCoinRecord {
   blindingKey: string;
 }
 
+/**
+ * Payment Visualization Configuration
+ */
+export interface PaymentVisualization {
+  showVisualization: boolean;
+}
+
 
 /**
  * Status of a coin.

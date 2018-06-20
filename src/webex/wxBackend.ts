@@ -344,6 +344,12 @@ function handleMessage(sender: MessageSender,
     case "update-user-config": {
       return needsWallet().updateUserConfig(detail.userConfiguration);
     }
+    case "get-payment-statistic": {
+      if (typeof detail.timePeriod !== "string") {
+        return Promise.reject(Error("timePeriod missing"));
+      }
+      return needsWallet().getPaymentStatistic(detail.timePeriod);
+    }
     default:
       // Exhaustiveness check.
       // See https://www.typescriptlang.org/docs/handbook/advanced-types.html

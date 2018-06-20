@@ -337,6 +337,7 @@ class WalletBalanceView extends React.Component<any, any> {
         {paybackAvailable && makeLink("payback", i18n.str`Payback`)}
         {makeLink("return-coins.html#dissolve", i18n.str`Return Electronic Cash to Bank Account`)}
         {makeLink("auditors.html", i18n.str`Manage Trusted Auditors and Exchanges`)}
+        {makeLink("user-configuration.html", "User Configuration")}
       </div>
     );
   }

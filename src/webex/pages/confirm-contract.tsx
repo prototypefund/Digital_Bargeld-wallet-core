@@ -44,8 +44,8 @@ import { WalletApiError } from "../wxApi";
 
 import * as Amounts from "../../amounts";
 
-import { ToggleAnimationWarning, VisualPayment, TrackMoney} from "./visual-payment";
-
+import { TrackMoney } from "./payment-record";
+import { ToggleAnimationWarning, VisualPayment} from "./visual-payment";
 
 interface DetailState {
   collapsed: boolean;
@@ -232,7 +232,6 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     } else {
       this.setState({ allowAnimation: false });
     }
-    console.log("test indexedDB", config);
   }
 
   async checkPayment() {
@@ -364,6 +363,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
 
   testTrackMoneyRecord = () => {
     this.setState({ renderTrackingRecord: true });
+    this.setState({ holdCheck: true });
   }
 
   procssPaymentInTrackingRecord = (event: React.MouseEvent<HTMLInputElement>) => {
@@ -373,6 +373,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       console.log("test", "cancel");
     }
     this.setState({ renderTrackingRecord: false });
+    this.setState({ holdCheck: false });
   }
 
 
@@ -404,7 +405,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     const totalAmount = {
       currency: baseAmount.currency,
       value: baseAmount.value * Amounts.fractionalBase + baseAmount.fraction,
-    }
+    };
     if (this.state.payStatus && this.state.payStatus.coinSelection) {
       const additionFee = this.state.payStatus.coinSelection.totalFees;
       totalAmount.value += additionFee.value * Amounts.fractionalBase + additionFee.fraction;
@@ -426,7 +427,10 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     let trackingRecod = null;
     if (this.state.renderTrackingRecord) {
       trackingRecod = (
-        <TrackMoney value={totalAmount.value} currency={totalAmount.currency} buttonHandler={this.procssPaymentInTrackingRecord}/>
+        <TrackMoney
+          value={totalAmount.value}
+          currency={totalAmount.currency}
+          buttonHandler={this.procssPaymentInTrackingRecord}/>
       );
     }
 
@@ -555,7 +559,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
           {visualAnimation}
           {toggleAnimationWarning}
           {/*test button for show tracking money record*/}
-          <button className="pure-button" onClick={() => this.testTrackMoneyRecord()}>Test</button>
+          <button className="pure-button" onClick={() => this.testTrackMoneyRecord()}>Test Payment Record</button>
           {trackingRecod}
         </div>
     );

@@ -68,7 +68,8 @@ import {
   ReserveRecord,
   Stores,
   TipRecord,
-  WireFee, UserConfiguration,
+  UserConfiguration,
+  WireFee,
 } from "./dbTypes";
 import {
   Auditor,
@@ -3043,5 +3044,143 @@ export class Wallet {
   async  updateUserConfig(userConfiguration: UserConfiguration): Promise<void> {
     await this.q().put(Stores.userConfiguration, userConfiguration).finish();
     this.notifier.notify();
+  }
+
+  async getPaymentStatistic(timePeriod: string): Promise<{history: HistoryRecord[]}> {
+    const history: HistoryRecord[] = [];
+
+    const purchases = await this.q().iter<PurchaseRecord>(Stores.purchases).toArray();
+
+    // this function is for adding test case
+    let testCur = new Date();
+    const oneDay = {...purchases[0]};
+    oneDay.timestamp = testCur.getTime();
+    purchases.push(oneDay);
+
+    testCur = new Date();
+    const oneWeek = {...purchases[0]};
+    oneWeek.timestamp = new Date(testCur.setDate(testCur.getDate() - 3)).getTime();
+    purchases.push(oneWeek);
+
+    testCur = new Date();
+    const oneMonth = {...purchases[0]};
+    oneMonth.timestamp = new Date(testCur.setDate(testCur.getDate() - 15)).getTime();
+    purchases.push(oneMonth);
+
+    testCur = new Date();
+    const halfYear = {...purchases[0]};
+    halfYear.timestamp = new Date(testCur.setMonth(testCur.getMonth() - 3)).getTime();
+    purchases.push(halfYear);
+
+    testCur = new Date();
+    const oneYear = {...purchases[0]};
+    oneYear.timestamp = new Date(testCur.setMonth(testCur.getMonth() - 9)).getTime();
+    // oneYear.finished = false;
+    purchases.push(oneYear);
+    // end of the function
+
+    for (const p of purchases) {
+      if (!p.finished) {
+        continue;
+      }
+      switch (timePeriod) {
+        case "one-day": {
+          const cur = new Date();
+          if (new Date(p.timestamp) >= new Date(cur.setDate(cur.getDate() - 1))) {
+            history.push({
+              detail: {
+                amount: p.contractTerms.amount,
+                contractTermsHash: p.contractTermsHash,
+                fulfillmentUrl: p.contractTerms.fulfillment_url,
+                merchantName: p.contractTerms.merchant.name,
+              },
+              timestamp: p.timestamp,
+              type: "pay",
+            });
+          }
+          break;
+        }
+        case "one-week": {
+          const cur = new Date();
+          if (new Date(p.timestamp) >= new Date(cur.setDate(cur.getDate() - 7))) {
+            history.push({
+              detail: {
+                amount: p.contractTerms.amount,
+                contractTermsHash: p.contractTermsHash,
+                fulfillmentUrl: p.contractTerms.fulfillment_url,
+                merchantName: p.contractTerms.merchant.name,
+              },
+              timestamp: p.timestamp,
+              type: "pay",
+            });
+          }
+          break;
+        }
+        case "one-month": {
+          const cur = new Date();
+          if (new Date(p.timestamp) >= new Date(cur.setMonth(cur.getMonth() - 1))) {
+            history.push({
+              detail: {
+                amount: p.contractTerms.amount,
+                contractTermsHash: p.contractTermsHash,
+                fulfillmentUrl: p.contractTerms.fulfillment_url,
+                merchantName: p.contractTerms.merchant.name,
+              },
+              timestamp: p.timestamp,
+              type: "pay",
+            });
+          }
+          break;
+        }
+        case "half-year": {
+          const cur = new Date();
+          if (new Date(p.timestamp) >= new Date(cur.setMonth(cur.getMonth() - 6))) {
+            history.push({
+              detail: {
+                amount: p.contractTerms.amount,
+                contractTermsHash: p.contractTermsHash,
+                fulfillmentUrl: p.contractTerms.fulfillment_url,
+                merchantName: p.contractTerms.merchant.name,
+              },
+              timestamp: p.timestamp,
+              type: "pay",
+            });
+          }
+          break;
+        }
+        case "one-year": {
+          const cur = new Date();
+          if (new Date(p.timestamp) >= new Date(cur.setFullYear(cur.getFullYear() - 1))) {
+            history.push({
+              detail: {
+                amount: p.contractTerms.amount,
+                contractTermsHash: p.contractTermsHash,
+                fulfillmentUrl: p.contractTerms.fulfillment_url,
+                merchantName: p.contractTerms.merchant.name,
+              },
+              timestamp: p.timestamp,
+              type: "pay",
+            });
+          }
+          break;
+        }
+        default: {
+          history.push({
+            detail: {
+              amount: p.contractTerms.amount,
+              contractTermsHash: p.contractTermsHash,
+              fulfillmentUrl: p.contractTerms.fulfillment_url,
+              merchantName: p.contractTerms.merchant.name,
+            },
+            timestamp: p.timestamp,
+            type: "pay",
+          });
+        }
+      }
+    }
+
+    history.sort((h1, h2) => Math.sign(h1.timestamp - h2.timestamp));
+
+    return {history};
   }
 }
