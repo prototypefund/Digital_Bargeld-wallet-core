@@ -45,7 +45,7 @@ import { WalletApiError } from "../wxApi";
 import * as Amounts from "../../amounts";
 
 import { TrackMoney } from "./payment-record";
-import { ToggleAnimationWarning, VisualPayment} from "./visual-payment";
+import { VisualPayment } from "./visual-payment";
 
 interface DetailState {
   collapsed: boolean;
@@ -139,7 +139,6 @@ interface ContractPromptState {
   firstEnter: boolean;
   clickClose: number;
   allowAnimation: boolean;
-  renderWarning: boolean;
   renderTrackingRecord: boolean;
 }
 
@@ -165,7 +164,6 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       firstEnter: true,
       clickClose: 0,
       allowAnimation: true,
-      renderWarning: false,
       renderTrackingRecord: false,
     };
   }
@@ -321,28 +319,6 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     }
   }
 
-  toggleAnimation = (event: React.ChangeEvent<HTMLInputElement>) => {
-    this.setState({ allowAnimation: event.target.checked });
-    // update indexedDB for user configuration
-    wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: event.target.checked });
-    if (!event.target.checked) {
-      this.setState({ renderWarning: true });
-    }
-  }
-
-  toggleAnimationHandler = (event: React.MouseEvent<HTMLInputElement>) => {
-    this.setState({ renderWarning: false });
-    if (event.currentTarget.value === "enableAnimation") {
-      this.setState({allowAnimation: true});
-      // update indexedDB for user configuration
-      wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: true });
-    } else {
-      this.setState({allowAnimation: false});
-      // update indexedDB for user configuration
-      wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: false});
-    }
-  }
-
   waitingAnimationFinish = (delayTime: number) => {
     window.setTimeout(this.closeAnimation, delayTime);
   }
@@ -366,7 +342,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     this.setState({ holdCheck: true });
   }
 
-  procssPaymentInTrackingRecord = (event: React.MouseEvent<HTMLInputElement>) => {
+  processPaymentInTrackingRecord = (event: React.MouseEvent<HTMLInputElement>) => {
     if (event.currentTarget.value === "pay") {
       console.log("test", "pay");
     } else {
@@ -430,16 +406,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
         <TrackMoney
           value={totalAmount.value}
           currency={totalAmount.currency}
-          buttonHandler={this.procssPaymentInTrackingRecord}/>
-      );
-    }
-
-    let toggleAnimationWarning = null;
-    if (this.state.renderWarning) {
-      toggleAnimationWarning = (
-        <ToggleAnimationWarning
-          enableAnimation={this.toggleAnimationHandler}
-          disableAnimation={this.toggleAnimationHandler}/>
+          buttonHandler={this.processPaymentInTrackingRecord}/>
       );
     }
 
@@ -447,7 +414,9 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     const ShowAnimationAgainButton = () => (
         <button className="pure-button button-secondary"
                 onClick={() => this.showAnimation()}
-                disabled={!this.state.allowAnimation}>
+                style={{
+                  display: !this.state.allowAnimation ? "none" : "inline-block",
+                }}>
             Show Visualization
         </button>
     );
@@ -501,7 +470,6 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
         &nbsp;
         { ShowAnimationAgainButton() }
         <br/>
-        <input type="checkbox" onChange={this.toggleAnimation} checked={this.state.allowAnimation}/>Show Animation
         <div>
           {(this.state.alreadyPaid
             ? <p className="okaybox">
@@ -557,7 +525,6 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
             : ConfirmPayDialog()
           }
           {visualAnimation}
-          {toggleAnimationWarning}
           {/*test button for show tracking money record*/}
           <button className="pure-button" onClick={() => this.testTrackMoneyRecord()}>Test Payment Record</button>
           {trackingRecod}

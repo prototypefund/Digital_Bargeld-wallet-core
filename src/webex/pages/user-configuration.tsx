@@ -22,14 +22,89 @@
 
 import * as React from "react";
 import * as ReactDOM from "react-dom";
+import * as wxApi from "../wxApi";
+import { ToggleAnimationWarning } from "./visual-payment";
 
-class UserConfiguration extends React.Component {
-  render(): JSX.Element {
-    return (
-      <div>
-        ok
-      </div>
-    );
+interface UserConfigurationState {
+  allowAnimation: boolean;
+  renderWarning: boolean;
+  loaded: boolean;
+}
+
+class UserConfiguration extends React.Component<any, UserConfigurationState> {
+  constructor(props: any) {
+    super(props);
+    this.state = {
+      allowAnimation: true,
+      loaded: false,
+      renderWarning: false,
+    };
+  }
+
+  componentWillMount() {
+    this.update();
+  }
+
+  async update() {
+    const config = await wxApi.getUserConfig("toggleAnimation");
+    if (config === null || config.toggle) {
+      this.setState({ allowAnimation: true });
+    } else {
+      this.setState({ allowAnimation: false });
+    }
+    this.setState({ loaded: true});
+  }
+
+  toggleAnimation = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ allowAnimation: event.target.checked });
+    // update indexedDB for user configuration
+    wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: event.target.checked });
+    if (!event.target.checked) {
+      this.setState({ renderWarning: true });
+    }
+  }
+
+  toggleAnimationHandler = (event: React.MouseEvent<HTMLInputElement>) => {
+    this.setState({ renderWarning: false });
+    if (event.currentTarget.value === "enableAnimation") {
+      this.setState({allowAnimation: true});
+      // update indexedDB for user configuration
+      wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: true });
+    } else {
+      this.setState({allowAnimation: false});
+      // update indexedDB for user configuration
+      wxApi.updateUserConfig({ operation: "toggleAnimation", toggle: false});
+    }
+  }
+
+  render() {
+    let toggleAnimationWarning = null;
+    if (this.state.renderWarning) {
+      toggleAnimationWarning = (
+        <ToggleAnimationWarning
+          enableAnimation={this.toggleAnimationHandler}
+          disableAnimation={this.toggleAnimationHandler}/>
+      );
+    }
+
+    if (this.state.loaded) {
+      return (
+        <div id="main">
+          <h1>User Configuration</h1>
+          <p>You can enable/disable payment visualization and show payment record in this page.</p>
+          Enable Payment Visualization<input type="checkbox"
+                                             onChange={this.toggleAnimation}
+                                             checked={this.state.allowAnimation}/>
+          <br />
+          Enable show payment record <input type="checkbox"/>
+          {toggleAnimationWarning}
+        </div>
+      );
+    } else {
+      return (
+        <p>Fetching data...</p>
+      );
+    }
   }
 }
 
