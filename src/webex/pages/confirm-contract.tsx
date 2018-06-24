@@ -377,23 +377,23 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     console.log("payStatus", this.state.payStatus);
 
     // get total amount, using for payment visualization and tracking money
-    const baseAmount = Amounts.parseOrThrow(c.amount);
-    const totalAmount = {
-      currency: baseAmount.currency,
-      value: baseAmount.value * Amounts.fractionalBase + baseAmount.fraction,
-    };
+    let totalAmount = Amounts.parseOrThrow(c.amount);
     if (this.state.payStatus && this.state.payStatus.coinSelection) {
       const additionFee = this.state.payStatus.coinSelection.totalFees;
-      totalAmount.value += additionFee.value * Amounts.fractionalBase + additionFee.fraction;
-      // totalAmount.value += 177 * Amounts.fractionalBase + additionFee.fraction;
+      totalAmount = Amounts.add(totalAmount, additionFee).amount;
+      // test case
+      // totalAmount = {
+      //   value: 177,
+      //   fraction: 0.77 * Amounts.fractionalBase,
+      //   currency: "KUDOS",
+      // };
     }
 
     // get visual animation
     let visualAnimation = null;
     if (this.state.renderAnimation) {
         visualAnimation = (
-          <VisualPayment value={ totalAmount.value }
-                         currency={ totalAmount.currency }
+          <VisualPayment amount={totalAmount}
                          animationFinish={this.waitingAnimationFinish}
                          closeAnimation={this.closeAnimation}/>
         );
@@ -404,8 +404,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     if (this.state.renderTrackingRecord) {
       trackingRecod = (
         <TrackMoney
-          value={totalAmount.value}
-          currency={totalAmount.currency}
+          amount={totalAmount}
           buttonHandler={this.processPaymentInTrackingRecord}/>
       );
     }

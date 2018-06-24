@@ -32,11 +32,11 @@ import { Modal, ModelAnimationDuration } from "./modal";
 import "../style/animation.css";
 
 import * as Amounts from "../../amounts";
+import {AmountJson} from "../../amounts";
 
 interface MoneyCardPros {
   key: number;
-  value: number;
-  currency: string;
+  amount: AmountJson;
   animationDurationTime: number;
   animationDelayTime: number;
 }
@@ -63,15 +63,14 @@ const MoneyCard = (props: MoneyCardPros) => {
       zIndex: 200,
     }}>
       <i18n.Translate wrap="p">
-        <span>{props.value + " " + props.currency}</span>
+        <span>{Amounts.toFloat(props.amount) + " " + props.amount.currency}</span>
       </i18n.Translate>
     </div>
   );
 };
 
 interface VisualPaymentProps {
-  value: number;
-  currency: string;
+  amount: AmountJson;
   animationFinish: (delayTime: number) => void;
   closeAnimation: (event: React.MouseEvent<HTMLInputElement>) => void;
 }
@@ -82,12 +81,20 @@ interface VisualPaymentProps {
  */
 export const VisualPayment = (props: VisualPaymentProps) => {
   // set denomination and its corresponding delay time
-  let denominations = [100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01];
-  if (props.currency === "USD") {
-    denominations = [100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.01];
-  } else if (props.currency === "EUR") {
-    denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
+  const denominations: AmountJson[] = [];
+  let rawDenominations = [100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01];
+  if (props.amount.currency === "KUDOS") {
+    rawDenominations = [100, 50, 10, 5, 1, 0.5, 0.1, 0.05, 0.01];
+  } else if (props.amount.currency === "USD") {
+    rawDenominations = [100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.01];
+  } else if (props.amount.currency === "EUR") {
+    rawDenominations = [500, 200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01];
   }
+  for (const denomination of rawDenominations) {
+    denominations.push(Amounts.fromFloat(denomination, props.amount.currency));
+  }
+  console.log("test denominations", denominations);
+
   const maxDelayTime = 3000;
   const delayDiff = 200;
   const denominationDelay: number[] = [];
@@ -97,15 +104,15 @@ export const VisualPayment = (props: VisualPaymentProps) => {
   console.log(denominationDelay);
 
   // get moneyList for displaying animation
-  const moneyList: number[] = [];
-  let remainingAmount: number = props.value;
+  const moneyList: AmountJson[] = [];
+  let remainingAmount: AmountJson = props.amount;
   for (const denomination of denominations) {
-    while (remainingAmount >= denomination * Amounts.fractionalBase) {
+    while (Amounts.cmp(remainingAmount, denomination) >= 0) {
       moneyList.push(denomination);
-      remainingAmount -= denomination * Amounts.fractionalBase;
+      remainingAmount = Amounts.sub(remainingAmount, denomination).amount;
     }
   }
-  console.log(moneyList);
+  console.log("test money list", moneyList);
 
   // get list of html element for animation
   // first set a tiny delay time for animation plus the modelbox animation time
@@ -114,8 +121,7 @@ export const VisualPayment = (props: VisualPaymentProps) => {
   const listItems = moneyList.map( (value, index) => {
     const MoneyCardItem = (
       <MoneyCard key={index}
-                 value={value}
-                 currency={props.currency}
+                 amount={value}
                  animationDurationTime={denominationDelay[denominations.indexOf(value)]}
                  animationDelayTime={ totalDelayTime } />
     );
@@ -132,7 +138,7 @@ export const VisualPayment = (props: VisualPaymentProps) => {
         width: "60vw",
       }}>
         <i18n.Translate wrap="h2">
-          What you will cost: <span>{props.value / Amounts.fractionalBase + " " + props.currency}</span>
+          What you will cost: <span>{Amounts.toFloat(props.amount) + " " + props.amount.currency}</span>
         </i18n.Translate>
         {listItems}
         <button className="pure-button button-destructive"

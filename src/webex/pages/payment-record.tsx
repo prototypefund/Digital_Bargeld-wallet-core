@@ -14,6 +14,12 @@
  TALER; see the file COPYING.  If not, see <http://www.gnu.org/licenses/>
  */
 
+/**
+ * User UserConfiguration
+ *
+ * @author Siyu Lei
+ */
+
 import * as React from "react";
 import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
 import "react-tabs/style/react-tabs.css";
@@ -26,17 +32,11 @@ import * as Amounts from "../../amounts";
 import * as wxApi from "../wxApi";
 
 import {Bar, BarChart, Legend, Tooltip, XAxis, YAxis} from "recharts";
-
-/**
- * User UserConfiguration
- *
- * @author Siyu Lei
- */
+import {AmountJson} from "../../amounts";
 
 interface RenderChartPros {
-  curValue: number;
-  historyValue: number;
-  currency: string;
+  curAmount: AmountJson;
+  historyAmount: AmountJson;
   period: string;
 }
 
@@ -67,11 +67,11 @@ const RenderChart = (props: RenderChartPros) => {
 
   const data = [
     {
-      curFullContent: props.curValue / Amounts.fractionalBase + " " + props.currency,
-      historyFullContent: props.historyValue / Amounts.fractionalBase + " " + props.currency,
+      // curFullContent: Amounts.toFloat(props.curAmount) + " " + props.curAmount.currency,
+      // historyFullContent: Amounts.toFloat(props.historyAmount) + " " + props.historyAmount.currency,
       name: "Payment Record",
-      [period]: props.historyValue / Amounts.fractionalBase,
-      ["This time"]: props.curValue / Amounts.fractionalBase,
+      [period]: Amounts.toFloat(props.historyAmount),
+      ["This time"]: Amounts.toFloat(props.curAmount),
     },
   ];
 
@@ -81,9 +81,9 @@ const RenderChart = (props: RenderChartPros) => {
               data={data}
               layout="vertical"
               margin={{top: 5, right: 30, left: 20, bottom: 5}}>
-      <XAxis type="number" unit={props.currency} />
+      <XAxis type="number" unit={props.curAmount.currency} />
       <YAxis type="category" dataKey="name"/>
-      <Tooltip formatter={value => value + " " + props.currency}/>
+      <Tooltip formatter={value => value + " " + props.curAmount.currency}/>
       <Legend />
       <Bar dataKey={period} stackId="a" fill="#8884d8" />
       <Bar dataKey="This time" stackId="a" fill="#82ca9d" />
@@ -98,21 +98,20 @@ const RenderChart = (props: RenderChartPros) => {
 };
 
 interface RenderDataPros {
-  value: number;
-  currency: string;
+  amount: AmountJson;
   period: string;
 }
 
 interface RenderDataState {
   loaded: boolean;
-  historyAmount: number;
+  historyAmount: AmountJson;
 }
 
 class RenderData extends React.Component<RenderDataPros, RenderDataState> {
   constructor(props: RenderDataPros) {
     super(props);
     this.state = {
-      historyAmount: 0,
+      historyAmount: {value: 0, fraction: 0, currency: props.amount.currency},
       loaded: false,
     };
   }
@@ -123,11 +122,11 @@ class RenderData extends React.Component<RenderDataPros, RenderDataState> {
 
   async update() {
     const record = await wxApi.getPaymentStatistic(this.props.period);
-    let amount = 0;
+    let amount = {value: 0, fraction: 0, currency: this.props.amount.currency};
     for (const p of record.history) {
-      if (p.detail.totalCost !== undefined) {
-        const arr = p.detail.totalCost.split(":");
-        amount += arr[1] * Amounts.fractionalBase;
+      if (p.detail.totalCost !== undefined &&
+        Amounts.parseOrThrow(p.detail.totalCost).currency === this.props.amount.currency) {
+        amount = Amounts.add(amount, Amounts.parseOrThrow(p.detail.totalCost)).amount;
       }
     }
     this.setState({ historyAmount: amount, loaded: true });
@@ -138,9 +137,8 @@ class RenderData extends React.Component<RenderDataPros, RenderDataState> {
       return (
         <div>
           <RenderChart
-            curValue={this.props.value}
-            historyValue={this.state.historyAmount}
-            currency={this.props.currency}
+            curAmount={this.props.amount}
+            historyAmount={this.state.historyAmount}
             period={this.props.period}/>
         </div>
       );
@@ -154,8 +152,7 @@ class RenderData extends React.Component<RenderDataPros, RenderDataState> {
 
 
 interface RecordTabProps {
-  value: number;
-  currency: string;
+  amount: AmountJson;
 }
 
 const RecordTab = (props: RecordTabProps) => {
@@ -180,23 +177,23 @@ const RecordTab = (props: RecordTabProps) => {
       </TabList>
       <TabPanel>
         <h3 style={{ textAlign: "center" }}>You last one day payment record</h3>
-        <RenderData value={props.value} currency={props.currency} period="one-day"/>
+        <RenderData amount={props.amount} period="one-day"/>
       </TabPanel>
       <TabPanel>
         <h3 style={{ textAlign: "center" }}>You last one week payment record</h3>
-        <RenderData value={props.value} currency={props.currency} period="one-week"/>
+        <RenderData amount={props.amount} period="one-week"/>
       </TabPanel>
       <TabPanel>
         <h3 style={{ textAlign: "center" }}>You last one month payment record</h3>
-        <RenderData value={props.value} currency={props.currency} period="one-month"/>
+        <RenderData amount={props.amount} period="one-month"/>
       </TabPanel>
       <TabPanel>
         <h3 style={{ textAlign: "center" }}>You last half year payment record</h3>
-        <RenderData value={props.value} currency={props.currency} period="half-year"/>
+        <RenderData amount={props.amount} period="half-year"/>
       </TabPanel>
       <TabPanel>
         <h3 style={{ textAlign: "center" }}>You last one year payment record</h3>
-        <RenderData value={props.value} currency={props.currency} period="one-year"/>
+        <RenderData amount={props.amount} period="one-year"/>
       </TabPanel>
     </Tabs>
   );
@@ -204,8 +201,7 @@ const RecordTab = (props: RecordTabProps) => {
 
 interface TrackMoneyPros {
   buttonHandler: (event: React.MouseEvent<HTMLInputElement>) => void;
-  value: number;
-  currency: string;
+  amount: AmountJson;
 }
 
 export const TrackMoney = (props: TrackMoneyPros) => {
@@ -214,7 +210,7 @@ export const TrackMoney = (props: TrackMoneyPros) => {
       <div style={{
         textAlign: "left",
       }}>
-        <RecordTab value={props.value} currency={props.currency} />
+        <RecordTab amount={props.amount} />
       </div>
       <div style={{
         marginTop: "1em",
