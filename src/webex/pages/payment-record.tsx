@@ -125,8 +125,8 @@ class RenderData extends React.Component<RenderDataPros, RenderDataState> {
     const record = await wxApi.getPaymentStatistic(this.props.period);
     let amount = 0;
     for (const p of record.history) {
-      if (p.detail.amount !== undefined) {
-        const arr = p.detail.amount.split(":");
+      if (p.detail.totalCost !== undefined) {
+        const arr = p.detail.totalCost.split(":");
         amount += arr[1] * Amounts.fractionalBase;
       }
     }
