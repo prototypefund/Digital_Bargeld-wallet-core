@@ -837,6 +837,11 @@ export interface PurchaseRecord {
    * The abort (with refund) was completed for this (incomplete!) purchase.
    */
   abortDone: boolean;
+
+  /**
+   * Get total cost(total amount + fee)
+   */
+  totalCost: string;
 }
 
 

@@ -645,7 +645,7 @@ export class Wallet {
    */
   private async recordConfirmPay(proposal: ProposalDownloadRecord,
                                  payCoinInfo: PayCoinInfo,
-                                 chosenExchange: string): Promise<PurchaseRecord> {
+                                 chosenExchange: string, totalFees: AmountJson): Promise<PurchaseRecord> {
     const payReq: PayReq = {
       coins: payCoinInfo.sigs,
       merchant_pub: proposal.contractTerms.merchant_pub,
@@ -666,6 +666,8 @@ export class Wallet {
       refundsPending: {},
       timestamp: (new Date()).getTime(),
       timestamp_refund: 0,
+      totalCost: Amounts.toString(
+        Amounts.add(Amounts.parseOrThrow(proposal.contractTerms.amount), totalFees).amount),
     };
 
     await this.q()
@@ -861,9 +863,9 @@ export class Wallet {
     if (!sd) {
       const { exchangeUrl, cds, totalAmount } = res;
       const payCoinInfo = await this.cryptoApi.signDeposit(proposal.contractTerms, cds, totalAmount);
-      purchase = await this.recordConfirmPay(proposal, payCoinInfo, exchangeUrl);
+      purchase = await this.recordConfirmPay(proposal, payCoinInfo, exchangeUrl, res.totalFees);
     } else {
-      purchase = await this.recordConfirmPay(sd.proposal, sd.payCoinInfo, sd.exchangeUrl);
+      purchase = await this.recordConfirmPay(sd.proposal, sd.payCoinInfo, sd.exchangeUrl, res.totalFees);
     }
 
     return this.submitPay(purchase.contractTermsHash, sessionId);
@@ -3079,6 +3081,20 @@ export class Wallet {
     purchases.push(oneYear);
     // end of the function
 
+    const pushToArray = (cur: PurchaseRecord, arr: HistoryRecord[]) => {
+      arr.push({
+        detail: {
+          amount: cur.contractTerms.amount,
+          contractTermsHash: cur.contractTermsHash,
+          fulfillmentUrl: cur.contractTerms.fulfillment_url,
+          merchantName: cur.contractTerms.merchant.name,
+          totalCost: cur.totalCost,
+        },
+        timestamp: cur.timestamp,
+        type: "pay",
+      });
+    }
+
     for (const p of purchases) {
       if (!p.finished) {
         continue;
@@ -3087,94 +3103,40 @@ export class Wallet {
         case "one-day": {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setDate(cur.getDate() - 1))) {
-            history.push({
-              detail: {
-                amount: p.contractTerms.amount,
-                contractTermsHash: p.contractTermsHash,
-                fulfillmentUrl: p.contractTerms.fulfillment_url,
-                merchantName: p.contractTerms.merchant.name,
-              },
-              timestamp: p.timestamp,
-              type: "pay",
-            });
+            pushToArray(p, history);
           }
           break;
         }
         case "one-week": {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setDate(cur.getDate() - 7))) {
-            history.push({
-              detail: {
-                amount: p.contractTerms.amount,
-                contractTermsHash: p.contractTermsHash,
-                fulfillmentUrl: p.contractTerms.fulfillment_url,
-                merchantName: p.contractTerms.merchant.name,
-              },
-              timestamp: p.timestamp,
-              type: "pay",
-            });
+            pushToArray(p, history);
           }
           break;
         }
         case "one-month": {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setMonth(cur.getMonth() - 1))) {
-            history.push({
-              detail: {
-                amount: p.contractTerms.amount,
-                contractTermsHash: p.contractTermsHash,
-                fulfillmentUrl: p.contractTerms.fulfillment_url,
-                merchantName: p.contractTerms.merchant.name,
-              },
-              timestamp: p.timestamp,
-              type: "pay",
-            });
+            pushToArray(p, history);
           }
           break;
         }
         case "half-year": {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setMonth(cur.getMonth() - 6))) {
-            history.push({
-              detail: {
-                amount: p.contractTerms.amount,
-                contractTermsHash: p.contractTermsHash,
-                fulfillmentUrl: p.contractTerms.fulfillment_url,
-                merchantName: p.contractTerms.merchant.name,
-              },
-              timestamp: p.timestamp,
-              type: "pay",
-            });
+            pushToArray(p, history);
           }
           break;
         }
         case "one-year": {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setFullYear(cur.getFullYear() - 1))) {
-            history.push({
-              detail: {
-                amount: p.contractTerms.amount,
-                contractTermsHash: p.contractTermsHash,
-                fulfillmentUrl: p.contractTerms.fulfillment_url,
-                merchantName: p.contractTerms.merchant.name,
-              },
-              timestamp: p.timestamp,
-              type: "pay",
-            });
+            pushToArray(p, history);
           }
           break;
         }
         default: {
-          history.push({
-            detail: {
-              amount: p.contractTerms.amount,
-              contractTermsHash: p.contractTermsHash,
-              fulfillmentUrl: p.contractTerms.fulfillment_url,
-              merchantName: p.contractTerms.merchant.name,
-            },
-            timestamp: p.timestamp,
-            type: "pay",
-          });
+          pushToArray(p, history);
         }
       }
     }
