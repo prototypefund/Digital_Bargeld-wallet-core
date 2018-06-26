@@ -229,3 +229,24 @@ export const TrackMoney = (props: TrackMoneyPros) => {
     </Modal>
   );
 };
+
+interface RenderCategoryProps {
+  selectHandler: (event: React.FormEvent<HTMLSelectElement>) => void;
+}
+
+export const RenderCategory = (props: RenderCategoryProps) => {
+  return (
+    <div>
+      <p style={{display: "inline-block"}}>Choose a category:</p>
+      &nbsp;
+      <select onChange={props.selectHandler}>
+        <option value="Uncategorized">Uncategorized</option>
+        <option value="Education">Education</option>
+        <option value="Shopping">Shopping</option>
+        <option value="Entertainment">Entertainment</option>
+        <option value="Restaurant">Restaurant</option>
+        <option value="Groceries">Groceries</option>
+      </select>
+    </div>
+  );
+}

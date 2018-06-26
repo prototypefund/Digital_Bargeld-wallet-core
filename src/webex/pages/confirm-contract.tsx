@@ -44,7 +44,7 @@ import { WalletApiError } from "../wxApi";
 
 import * as Amounts from "../../amounts";
 
-import { TrackMoney } from "./payment-record";
+import { RenderCategory, TrackMoney } from "./payment-record";
 import { VisualPayment } from "./visual-payment";
 
 interface DetailState {
@@ -351,6 +351,10 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     this.setState({ renderTrackingRecord: false });
     this.setState({ holdCheck: false });
   }
+  
+  setPaymentCategory = (event: React.FormEvent<HTMLSelectElement>) => {
+    console.log("test option", event.currentTarget.value);
+  }
 
 
   render() {
@@ -527,6 +531,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
           {/*test button for show tracking money record*/}
           <button className="pure-button" onClick={() => this.testTrackMoneyRecord()}>Test Payment Record</button>
           {trackingRecod}
+          <RenderCategory selectHandler={this.setPaymentCategory}/>
         </div>
     );
   }
