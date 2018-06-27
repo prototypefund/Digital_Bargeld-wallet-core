@@ -21,8 +21,6 @@
  */
 
 import * as React from "react";
-import { Tab, TabList, TabPanel, Tabs } from "react-tabs";
-import "react-tabs/style/react-tabs.css";
 
 import { Modal } from "./modal";
 
@@ -33,33 +31,34 @@ import * as wxApi from "../wxApi";
 
 import {Bar, BarChart, Legend, Tooltip, XAxis, YAxis} from "recharts";
 import {AmountJson} from "../../amounts";
+import {HistoryRecord} from "../../walletTypes";
 
-interface RenderChartPros {
+interface RenderHistoryPros {
   curAmount: AmountJson;
   historyAmount: AmountJson;
   period: string;
 }
 
-const RenderChart = (props: RenderChartPros) => {
+const RenderHistoryRecord = (props: RenderHistoryPros) => {
   let period = "Last one day";
   switch (props.period) {
-    case "one-day": {
+    case "one day": {
       period = "Last one day";
       break;
     }
-    case "one-week": {
+    case "one week": {
       period = "Last one week";
       break;
     }
-    case "one-month": {
+    case "one month": {
       period = "Last one month";
       break;
     }
-    case "half-year": {
+    case "half year": {
       period = "Last half year";
       break;
     }
-    case "one-year": {
+    case "one year": {
       period = "Last one year";
       break;
     }
@@ -80,7 +79,7 @@ const RenderChart = (props: RenderChartPros) => {
               height={200}
               data={data}
               layout="vertical"
-              margin={{top: 5, right: 30, left: 20, bottom: 5}}>
+              margin={{top: 20, right: 30, left: 20, bottom: 5}}>
       <XAxis type="number" unit={props.curAmount.currency} />
       <YAxis type="category" dataKey="name"/>
       <Tooltip formatter={value => value + " " + props.curAmount.currency}/>
@@ -97,22 +96,32 @@ const RenderChart = (props: RenderChartPros) => {
   );
 };
 
-interface RenderDataPros {
+interface TrackMoneyPros {
   amount: AmountJson;
-  period: string;
+  buttonHandler: (event: React.MouseEvent<HTMLInputElement>) => void;
 }
 
-interface RenderDataState {
+interface TrackMoneyState {
+  displayMode: string;
+  displayPeriod: string;
   loaded: boolean;
-  historyAmount: AmountJson;
+  periodRecords: HistoryRecord[][];
 }
 
-class RenderData extends React.Component<RenderDataPros, RenderDataState> {
-  constructor(props: RenderDataPros) {
+export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState> {
+  periods: string[];
+  modes: string[];
+
+  constructor(props: TrackMoneyPros) {
     super(props);
+    this.periods = ["one day", "one week", "one month", "half year", "one year"];
+    this.modes = ["history record", "category", "budget"];
     this.state = {
-      historyAmount: {value: 0, fraction: 0, currency: props.amount.currency},
+      // Need to fix
+      displayMode: this.modes[0],
+      displayPeriod: this.periods[0],
       loaded: false,
+      periodRecords: [],
     };
   }
 
@@ -121,26 +130,76 @@ class RenderData extends React.Component<RenderDataPros, RenderDataState> {
   }
 
   async update() {
-    const record = await wxApi.getPaymentStatistic(this.props.period);
-    let amount = {value: 0, fraction: 0, currency: this.props.amount.currency};
-    for (const p of record.history) {
-      if (p.detail.totalCost !== undefined &&
-        Amounts.parseOrThrow(p.detail.totalCost).currency === this.props.amount.currency) {
-        amount = Amounts.add(amount, Amounts.parseOrThrow(p.detail.totalCost)).amount;
-      }
+    const tempPeriodRecords = [];
+    for (const period of this.periods) {
+      const record = await wxApi.getPaymentStatistic(period.replace(" ", "-"));
+      tempPeriodRecords.push(record.history);
     }
-    this.setState({ historyAmount: amount, loaded: true });
+    this.setState({ periodRecords: tempPeriodRecords, loaded: true });
+  }
+
+  periodsHandler = (event: React.FormEvent<HTMLSelectElement>) => {
+    this.setState({ displayPeriod: event.currentTarget.value });
+  }
+
+  modesHandler = (event: React.FormEvent<HTMLSelectElement>) => {
+    this.setState({ displayMode: event.currentTarget.value });
   }
 
   render() {
+    const headerOptions = (
+      <div style={{
+        fontSize: "large",
+      }}>
+        <strong>Your </strong><RenderSelection options={this.modes} selectHandler={this.modesHandler}/>
+        <strong> of last </strong>
+        <RenderSelection options={this.periods} selectHandler={this.periodsHandler}/>
+      </div>
+    );
+
+    let displayContent = null;
+    if (this.state.loaded) {
+      const displayData = this.state.periodRecords[this.periods.indexOf(this.state.displayPeriod)];
+      if (this.state.displayMode === "category") {
+        console.log("test ===", "ccc");
+      } else if (this.state.displayMode === "budget") {
+        console.log("test ===", "bbb");
+      } else {
+        let historyAmount = {value: 0, fraction: 0, currency: this.props.amount.currency};
+        for (const p of displayData) {
+          if (p.detail.totalCost !== undefined &&
+            Amounts.parseOrThrow(p.detail.totalCost).currency === this.props.amount.currency) {
+            historyAmount = Amounts.add(historyAmount, Amounts.parseOrThrow(p.detail.totalCost)).amount;
+          }
+        }
+        displayContent = (
+          <RenderHistoryRecord
+            curAmount={this.props.amount}
+            historyAmount={historyAmount}
+            period={this.state.displayPeriod}/>
+        );
+      }
+    }
     if (this.state.loaded) {
       return (
-        <div>
-          <RenderChart
-            curAmount={this.props.amount}
-            historyAmount={this.state.historyAmount}
-            period={this.props.period}/>
-        </div>
+        <Modal>
+          {headerOptions}
+          {displayContent}
+          <div style={{
+            marginTop: "1em",
+            textAlign: "center",
+          }}>
+            <button className="pure-button button-success"
+                    value="pay"
+                    onClick={this.props.buttonHandler}>
+              Pay</button>
+            &nbsp;
+            <button className="pure-button button-secondary"
+                    value="cancel"
+                    onClick={this.props.buttonHandler}>
+              Cancel</button>
+          </div>
+        </Modal>
       );
     } else {
       return (
@@ -149,86 +208,6 @@ class RenderData extends React.Component<RenderDataPros, RenderDataState> {
     }
   }
 }
-
-
-interface RecordTabProps {
-  amount: AmountJson;
-}
-
-const RecordTab = (props: RecordTabProps) => {
-  return (
-    <Tabs>
-      <TabList>
-        <Tab>
-          One day
-        </Tab>
-        <Tab>
-          One week
-        </Tab>
-        <Tab>
-          One month
-        </Tab>
-        <Tab>
-          Half year
-        </Tab>
-        <Tab>
-          One year
-        </Tab>
-      </TabList>
-      <TabPanel>
-        <h3 style={{ textAlign: "center" }}>You last one day payment record</h3>
-        <RenderData amount={props.amount} period="one-day"/>
-      </TabPanel>
-      <TabPanel>
-        <h3 style={{ textAlign: "center" }}>You last one week payment record</h3>
-        <RenderData amount={props.amount} period="one-week"/>
-      </TabPanel>
-      <TabPanel>
-        <h3 style={{ textAlign: "center" }}>You last one month payment record</h3>
-        <RenderData amount={props.amount} period="one-month"/>
-      </TabPanel>
-      <TabPanel>
-        <h3 style={{ textAlign: "center" }}>You last half year payment record</h3>
-        <RenderData amount={props.amount} period="half-year"/>
-      </TabPanel>
-      <TabPanel>
-        <h3 style={{ textAlign: "center" }}>You last one year payment record</h3>
-        <RenderData amount={props.amount} period="one-year"/>
-      </TabPanel>
-    </Tabs>
-  );
-};
-
-interface TrackMoneyPros {
-  buttonHandler: (event: React.MouseEvent<HTMLInputElement>) => void;
-  amount: AmountJson;
-}
-
-export const TrackMoney = (props: TrackMoneyPros) => {
-  return (
-    <Modal>
-      <div style={{
-        textAlign: "left",
-      }}>
-        <RecordTab amount={props.amount} />
-      </div>
-      <div style={{
-        marginTop: "1em",
-        textAlign: "center",
-      }}>
-        <button className="pure-button button-success"
-                value="pay"
-                onClick={props.buttonHandler}>
-          Pay</button>
-        &nbsp;
-        <button className="pure-button button-secondary"
-                value="cancel"
-                onClick={props.buttonHandler}>
-          Cancel</button>
-      </div>
-    </Modal>
-  );
-};
 
 interface RenderCategoryProps {
   selectHandler: (event: React.FormEvent<HTMLSelectElement>) => void;
@@ -249,4 +228,21 @@ export const RenderCategory = (props: RenderCategoryProps) => {
       </select>
     </div>
   );
+};
+
+interface RenderSelectionPros {
+  selectHandler: (event: React.FormEvent<HTMLSelectElement>) => void;
+  options: string[];
 }
+
+export const RenderSelection = (props: RenderSelectionPros) => {
+  const optionLists = props.options.map( (value, index) => (
+    <option key={index} value={value}>{value}</option>
+  ));
+
+  return (
+    <select onChange={props.selectHandler}>
+      {optionLists}
+    </select>
+  );
+};
