@@ -3093,17 +3093,40 @@ export class Wallet {
         timestamp: cur.timestamp,
         type: "pay",
       });
-    }
+    };
+    const pushRefundToArray = (cur: PurchaseRecord, arr: HistoryRecord[]) => {
+      const contractAmount = Amounts.parseOrThrow(cur.contractTerms.amount);
+      const amountsPending = (
+        Object.keys(cur.refundsPending)
+          .map((x) => Amounts.parseOrThrow(cur.refundsPending[x].refund_amount))
+      );
+      const amountsDone = (
+        Object.keys(cur.refundsDone)
+          .map((x) => Amounts.parseOrThrow(cur.refundsDone[x].refund_amount))
+      );
+      const amounts: AmountJson[] = amountsPending.concat(amountsDone);
+      const amount = Amounts.add(Amounts.getZero(contractAmount.currency), ...amounts).amount;
 
+      arr.push({
+        detail: {
+          contractTermsHash: cur.contractTermsHash,
+          fulfillmentUrl: cur.contractTerms.fulfillment_url,
+          merchantName: cur.contractTerms.merchant.name,
+          refundAmount: amount,
+        },
+        timestamp: cur.timestamp_refund,
+        type: "refund",
+      });
+    };
     for (const p of purchases) {
-      if (!p.finished) {
-        continue;
-      }
       switch (timePeriod) {
         case "one-day": {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setDate(cur.getDate() - 1))) {
             pushToArray(p, history);
+            if (p.timestamp_refund) {
+              pushRefundToArray(p, history);
+            }
           }
           break;
         }
@@ -3111,6 +3134,9 @@ export class Wallet {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setDate(cur.getDate() - 7))) {
             pushToArray(p, history);
+            if (p.timestamp_refund) {
+              pushRefundToArray(p, history);
+            }
           }
           break;
         }
@@ -3118,6 +3144,9 @@ export class Wallet {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setMonth(cur.getMonth() - 1))) {
             pushToArray(p, history);
+            if (p.timestamp_refund) {
+              pushRefundToArray(p, history);
+            }
           }
           break;
         }
@@ -3125,6 +3154,9 @@ export class Wallet {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setMonth(cur.getMonth() - 6))) {
             pushToArray(p, history);
+            if (p.timestamp_refund) {
+              pushRefundToArray(p, history);
+            }
           }
           break;
         }
@@ -3132,11 +3164,17 @@ export class Wallet {
           const cur = new Date();
           if (new Date(p.timestamp) >= new Date(cur.setFullYear(cur.getFullYear() - 1))) {
             pushToArray(p, history);
+            if (p.timestamp_refund) {
+              pushRefundToArray(p, history);
+            }
           }
           break;
         }
         default: {
           pushToArray(p, history);
+          if (p.timestamp_refund) {
+            pushRefundToArray(p, history);
+          }
         }
       }
     }

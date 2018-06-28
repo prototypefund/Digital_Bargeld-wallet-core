@@ -165,11 +165,23 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
       } else if (this.state.displayMode === "budget") {
         console.log("test ===", "bbb");
       } else {
-        let historyAmount = {value: 0, fraction: 0, currency: this.props.amount.currency};
+        let historyAmount = Amounts.getZero(this.props.amount.currency);
         for (const p of displayData) {
-          if (p.detail.totalCost !== undefined &&
-            Amounts.parseOrThrow(p.detail.totalCost).currency === this.props.amount.currency) {
-            historyAmount = Amounts.add(historyAmount, Amounts.parseOrThrow(p.detail.totalCost)).amount;
+          if (p.type === "pay") {
+            if (p.detail.totalCost !== undefined) {
+              if (this.props.amount.currency === Amounts.parseOrThrow(p.detail.totalCost).currency) {
+                historyAmount = Amounts.add(historyAmount, Amounts.parseOrThrow(p.detail.totalCost)).amount;
+              }
+            } else {
+              if (this.props.amount.currency === Amounts.parseOrThrow(p.detail.amount).currency) {
+                historyAmount = Amounts.add(historyAmount, Amounts.parseOrThrow(p.detail.amount)).amount;
+              }
+            }
+          }
+          if (p.type === "refund") {
+            if (this.props.amount.currency === p.detail.refundAmount.currency) {
+              historyAmount = Amounts.sub(historyAmount, p.detail.refundAmount).amount;
+            }
           }
         }
         displayContent = (
