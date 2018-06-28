@@ -29,17 +29,52 @@ import "../style/animation.css";
 import * as Amounts from "../../amounts";
 import * as wxApi from "../wxApi";
 
-import {Bar, BarChart, Legend, Tooltip, XAxis, YAxis} from "recharts";
-import {AmountJson} from "../../amounts";
-import {HistoryRecord} from "../../walletTypes";
+import { Bar, BarChart, Cell, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
+import { AmountJson } from "../../amounts";
+import { HistoryRecord } from "../../walletTypes";
 
-interface RenderHistoryPros {
+
+interface Category {
+  category: string;
+  amount?: AmountJson;
+  budget?: AmountJson;
+}
+
+interface RenderCategoryChartProps {
+  categorys: Category[];
+}
+
+const RenderCategoryChart = (props: RenderCategoryChartProps) => {
+  const data = [];
+  for (const categoryItem of props.categorys) {
+    const dataItem: { name: string; value: number } = {
+      name: categoryItem.category, value: (categoryItem.amount ? Amounts.toFloat(categoryItem.amount) : 0)};
+    data.push(dataItem);
+  }
+  // Hard Code categoires color
+  const COLORS = ["#0088FE", "#FFBB28", "#bebaec", "#FF8042", "#00C49F", "#585858"];
+  const CATEGORYS = ["Education", "Entertainment", "Groceries", "Restaurant", "Shopping", "Uncategorized"];
+  console.log("test", CATEGORYS.indexOf("test"));
+  return (
+    <PieChart width={500} height={250} margin={{top: 20, right: 30, left: 20, bottom: 5}}>
+      <Pie data={data} dataKey="value" innerRadius={60} outerRadius={100} fill="#82ca9d">
+        {
+          data.map((entry, index) => <Cell
+            fill={COLORS[CATEGORYS.indexOf(entry.name) === -1 ? COLORS.length - 1 : CATEGORYS.indexOf(entry.name)]}/>)
+        }
+      </Pie>
+      <Tooltip/>
+    </PieChart>
+  );
+};
+
+interface RenderHistoryChartPros {
   curAmount: AmountJson;
   historyAmount: AmountJson;
   period: string;
 }
 
-const RenderHistoryRecord = (props: RenderHistoryPros) => {
+const RenderHistoryRecordChart = (props: RenderHistoryChartPros) => {
   let period = "Last one day";
   switch (props.period) {
     case "one day": {
@@ -161,7 +196,12 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     if (this.state.loaded) {
       const displayData = this.state.periodRecords[this.periods.indexOf(this.state.displayPeriod)];
       if (this.state.displayMode === "category") {
-        console.log("test ===", "ccc");
+        const testArr: Category[] = [];
+        testArr.push({category: "Education", amount: Amounts.parse("KUDOS:0")});
+        testArr.push({category: "test2", amount: Amounts.parse("KUDOS:20.5")});
+        displayContent = (
+          <RenderCategoryChart categorys={testArr}/>
+        );
       } else if (this.state.displayMode === "budget") {
         console.log("test ===", "bbb");
       } else {
@@ -185,7 +225,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
           }
         }
         displayContent = (
-          <RenderHistoryRecord
+          <RenderHistoryRecordChart
             curAmount={this.props.amount}
             historyAmount={historyAmount}
             period={this.state.displayPeriod}/>
