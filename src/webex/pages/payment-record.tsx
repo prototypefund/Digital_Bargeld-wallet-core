@@ -68,65 +68,63 @@ const RenderCategoryChart = (props: RenderCategoryChartProps) => {
   );
 };
 
-interface RenderHistoryChartPros {
+interface TotalAmountRecord {
   curAmount: AmountJson;
   historyAmount: AmountJson;
   period: string;
 }
 
-const RenderHistoryRecordChart = (props: RenderHistoryChartPros) => {
-  let period = "Last one day";
-  switch (props.period) {
-    case "one day": {
-      period = "Last one day";
-      break;
-    }
-    case "one week": {
-      period = "Last one week";
-      break;
-    }
-    case "one month": {
-      period = "Last one month";
-      break;
-    }
-    case "half year": {
-      period = "Last half year";
-      break;
-    }
-    case "one year": {
-      period = "Last one year";
-      break;
-    }
-  }
+interface RenderHistoryChartPros {
+  amountsArray: TotalAmountRecord[];
+}
 
-  const data = [
-    {
-      // curFullContent: Amounts.toFloat(props.curAmount) + " " + props.curAmount.currency,
-      // historyFullContent: Amounts.toFloat(props.historyAmount) + " " + props.historyAmount.currency,
-      name: "Payment Record",
-      [period]: Amounts.toFloat(props.historyAmount),
-      ["This time"]: Amounts.toFloat(props.curAmount),
-    },
-  ];
+const RenderHistoryRecordChart = (props: RenderHistoryChartPros) => {
+  const getName = (period: string) => {
+    switch (period) {
+      case "one day": {
+        return "One Day";
+      }
+      case "one week": {
+        return "One Week";
+      }
+      case "one month": {
+        return "One Month";
+      }
+      case "half year": {
+        return "Half Year";
+      }
+      case "one year": {
+        return "One Year";
+      }
+      default: {
+        return "One Day";
+      }
+    }
+  };
+  const data = [];
+  for (const TotalAmount of props.amountsArray) {
+    const dataItem: {name: string; History: number; Current: number } = {
+      Current: Amounts.toFloat(TotalAmount.curAmount),
+      History: Amounts.toFloat(TotalAmount.historyAmount),
+      name: getName(TotalAmount.period),
+    };
+    data.push(dataItem);
+  }
+  console.log("test data", data);
+  const currency = props.amountsArray[0].curAmount.currency;
 
   return (
     <BarChart width={500}
-              height={200}
+              height={350}
               data={data}
               layout="vertical"
               margin={{top: 20, right: 30, left: 20, bottom: 5}}>
-      <XAxis type="number" unit={props.curAmount.currency} />
+      <XAxis type="number" unit={currency} />
       <YAxis type="category" dataKey="name"/>
-      <Tooltip formatter={value => value + " " + props.curAmount.currency}/>
+      <Tooltip formatter={value => value + " " + currency}/>
       <Legend />
-      <Bar dataKey={period} stackId="a" fill="#8884d8" />
-      <Bar dataKey="This time" stackId="a" fill="#82ca9d" />
-      {/*<Bar dataKey={period} stackId="a" fill="#8884d8">*/}
-        {/*<LabelList dataKey="historyFullContent" />*/}
-      {/*</Bar>*/}
-      {/*<Bar dataKey="This time" stackId="a" fill="#82ca9d">*/}
-        {/*<LabelList dataKey="curFullContent" />*/}
-      {/*</Bar>*/}
+      <Bar dataKey="History" stackId="a" fill="#8884d8" />
+      <Bar dataKey="Current" stackId="a" fill="#82ca9d" />
     </BarChart>
   );
 };
@@ -138,7 +136,7 @@ interface TrackMoneyPros {
 
 interface TrackMoneyState {
   displayMode: string;
-  displayPeriod: string;
+  // displayPeriod: string;
   loaded: boolean;
   periodRecords: HistoryRecord[][];
 }
@@ -154,7 +152,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     this.state = {
       // Need to fix
       displayMode: this.modes[0],
-      displayPeriod: this.periods[0],
+      // displayPeriod: this.periods[0],
       loaded: false,
       periodRecords: [],
     };
@@ -173,9 +171,9 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     this.setState({ periodRecords: tempPeriodRecords, loaded: true });
   }
 
-  periodsHandler = (event: React.FormEvent<HTMLSelectElement>) => {
-    this.setState({ displayPeriod: event.currentTarget.value });
-  }
+  // periodsHandler = (event: React.FormEvent<HTMLSelectElement>) => {
+  //   this.setState({ displayPeriod: event.currentTarget.value });
+  // }
 
   modesHandler = (event: React.FormEvent<HTMLSelectElement>) => {
     this.setState({ displayMode: event.currentTarget.value });
@@ -188,13 +186,36 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
       }}>
         <strong>Your </strong><RenderSelection options={this.modes} selectHandler={this.modesHandler}/>
         <strong> of last </strong>
-        <RenderSelection options={this.periods} selectHandler={this.periodsHandler}/>
+        <RenderSelection options={this.periods} selectHandler={() => ""}/>
       </div>
     );
 
+    const getAmountSum = (periodRecord: HistoryRecord[]) => {
+      let historyAmount = Amounts.getZero(this.props.amount.currency);
+      for (const p of periodRecord) {
+        if (p.type === "pay") {
+          if (p.detail.totalCost !== undefined) {
+            if (this.props.amount.currency === Amounts.parseOrThrow(p.detail.totalCost).currency) {
+              historyAmount = Amounts.add(historyAmount, Amounts.parseOrThrow(p.detail.totalCost)).amount;
+            }
+          } else {
+            if (this.props.amount.currency === Amounts.parseOrThrow(p.detail.amount).currency) {
+              historyAmount = Amounts.add(historyAmount, Amounts.parseOrThrow(p.detail.amount)).amount;
+            }
+          }
+        }
+        if (p.type === "refund") {
+          if (this.props.amount.currency === p.detail.refundAmount.currency) {
+            historyAmount = Amounts.sub(historyAmount, p.detail.refundAmount).amount;
+          }
+        }
+      }
+      return historyAmount;
+    };
+
     let displayContent = null;
     if (this.state.loaded) {
-      const displayData = this.state.periodRecords[this.periods.indexOf(this.state.displayPeriod)];
+      // const displayData = this.state.periodRecords[this.periods.indexOf(this.state.displayPeriod)];
       if (this.state.displayMode === "category") {
         const testArr: Category[] = [];
         testArr.push({category: "Education", amount: Amounts.parse("KUDOS:0")});
@@ -205,30 +226,19 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
       } else if (this.state.displayMode === "budget") {
         console.log("test ===", "bbb");
       } else {
-        let historyAmount = Amounts.getZero(this.props.amount.currency);
-        for (const p of displayData) {
-          if (p.type === "pay") {
-            if (p.detail.totalCost !== undefined) {
-              if (this.props.amount.currency === Amounts.parseOrThrow(p.detail.totalCost).currency) {
-                historyAmount = Amounts.add(historyAmount, Amounts.parseOrThrow(p.detail.totalCost)).amount;
-              }
-            } else {
-              if (this.props.amount.currency === Amounts.parseOrThrow(p.detail.amount).currency) {
-                historyAmount = Amounts.add(historyAmount, Amounts.parseOrThrow(p.detail.amount)).amount;
-              }
-            }
-          }
-          if (p.type === "refund") {
-            if (this.props.amount.currency === p.detail.refundAmount.currency) {
-              historyAmount = Amounts.sub(historyAmount, p.detail.refundAmount).amount;
-            }
-          }
-        }
+        const amountArray: TotalAmountRecord[] = [];
+        this.state.periodRecords.forEach(
+          (item, index) => {
+            const history = getAmountSum(item);
+            amountArray.push({
+              curAmount: this.props.amount,
+              historyAmount: history,
+              period: this.periods[index],
+            });
+          });
         displayContent = (
           <RenderHistoryRecordChart
-            curAmount={this.props.amount}
-            historyAmount={historyAmount}
-            period={this.state.displayPeriod}/>
+            amountsArray={amountArray}/>
         );
       }
     }
