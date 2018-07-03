@@ -44,7 +44,7 @@ import { WalletApiError } from "../wxApi";
 
 import * as Amounts from "../../amounts";
 
-import { RenderCategory, TrackMoney } from "./payment-record";
+import { PaymentCategory, RenderSelection, TrackMoney } from "./payment-record";
 import { VisualPayment } from "./visual-payment";
 
 interface DetailState {
@@ -140,6 +140,7 @@ interface ContractPromptState {
   clickClose: number;
   allowAnimation: boolean;
   renderTrackingRecord: boolean;
+  category: string;
 }
 
 class ContractPrompt extends React.Component<ContractPromptProps, ContractPromptState> {
@@ -165,6 +166,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       clickClose: 0,
       allowAnimation: true,
       renderTrackingRecord: false,
+      category: PaymentCategory[0], // Set default category to be uncategorized
     };
   }
 
@@ -281,7 +283,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
     let payResult;
     this.setState({ working: true });
     try {
-      payResult = await wxApi.confirmPay(proposalId, this.props.sessionId);
+      payResult = await wxApi.confirmPay(proposalId, this.props.sessionId, this.state.category);
     } catch (e) {
       if (!(e instanceof WalletApiError)) {
         throw e;
@@ -354,6 +356,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
   
   setPaymentCategory = (event: React.FormEvent<HTMLSelectElement>) => {
     console.log("test option", event.currentTarget.value);
+    this.setState({ category: event.currentTarget.value });
   }
 
 
@@ -505,6 +508,14 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       </div>
     );
 
+    const Category = () => {
+      return (
+        <RenderSelection
+          options={PaymentCategory}
+          selectHandler={this.setPaymentCategory} />
+      );
+    };
+
     return (
         <div>
           <i18n.Translate wrap="p">
@@ -531,7 +542,7 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
           {/*test button for show tracking money record*/}
           <button className="pure-button" onClick={() => this.testTrackMoneyRecord()}>Test Payment Record</button>
           {trackingRecod}
-          <RenderCategory selectHandler={this.setPaymentCategory}/>
+          {Category()}
         </div>
     );
   }

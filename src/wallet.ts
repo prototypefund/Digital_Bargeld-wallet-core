@@ -645,7 +645,9 @@ export class Wallet {
    */
   private async recordConfirmPay(proposal: ProposalDownloadRecord,
                                  payCoinInfo: PayCoinInfo,
-                                 chosenExchange: string, totalFees: AmountJson): Promise<PurchaseRecord> {
+                                 chosenExchange: string,
+                                 totalFees: AmountJson,
+                                 category?: string): Promise<PurchaseRecord> {
     const payReq: PayReq = {
       coins: payCoinInfo.sigs,
       merchant_pub: proposal.contractTerms.merchant_pub,
@@ -661,6 +663,7 @@ export class Wallet {
       lastSessionId: undefined,
       lastSessionSig: undefined,
       merchantSig: proposal.merchantSig,
+      paymentCategory: category,
       payReq,
       refundsDone: {},
       refundsPending: {},
@@ -816,7 +819,7 @@ export class Wallet {
   /**
    * Add a contract to the wallet and sign coins, and send them.
    */
-  async confirmPay(proposalId: number, sessionId: string | undefined): Promise<ConfirmPayResult> {
+  async confirmPay(proposalId: number, sessionId: string | undefined, category?: string): Promise<ConfirmPayResult> {
     console.log(`executing confirmPay with proposalId ${proposalId} and sessionId ${sessionId}`);
     const proposal: ProposalDownloadRecord|undefined = await this.q().get(Stores.proposals, proposalId);
 
@@ -863,9 +866,9 @@ export class Wallet {
     if (!sd) {
       const { exchangeUrl, cds, totalAmount } = res;
       const payCoinInfo = await this.cryptoApi.signDeposit(proposal.contractTerms, cds, totalAmount);
-      purchase = await this.recordConfirmPay(proposal, payCoinInfo, exchangeUrl, res.totalFees);
+      purchase = await this.recordConfirmPay(proposal, payCoinInfo, exchangeUrl, res.totalFees, category);
     } else {
-      purchase = await this.recordConfirmPay(sd.proposal, sd.payCoinInfo, sd.exchangeUrl, res.totalFees);
+      purchase = await this.recordConfirmPay(sd.proposal, sd.payCoinInfo, sd.exchangeUrl, res.totalFees, category);
     }
 
     return this.submitPay(purchase.contractTermsHash, sessionId);
@@ -3085,6 +3088,7 @@ export class Wallet {
       arr.push({
         detail: {
           amount: cur.contractTerms.amount,
+          category: cur.paymentCategory,
           contractTermsHash: cur.contractTermsHash,
           fulfillmentUrl: cur.contractTerms.fulfillment_url,
           merchantName: cur.contractTerms.merchant.name,
@@ -3109,6 +3113,7 @@ export class Wallet {
 
       arr.push({
         detail: {
+          category: cur.paymentCategory,
           contractTermsHash: cur.contractTermsHash,
           fulfillmentUrl: cur.contractTerms.fulfillment_url,
           merchantName: cur.contractTerms.merchant.name,

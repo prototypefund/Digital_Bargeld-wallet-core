@@ -132,7 +132,7 @@ function handleMessage(sender: MessageSender,
       if (typeof detail.proposalId !== "number") {
         throw Error("proposalId must be number");
       }
-      return needsWallet().confirmPay(detail.proposalId, detail.sessionId);
+      return needsWallet().confirmPay(detail.proposalId, detail.sessionId, detail.category);
     }
     case "submit-pay": {
       if (typeof detail.contractTermsHash !== "string") {

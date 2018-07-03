@@ -168,6 +168,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
       const record = await wxApi.getPaymentStatistic(period.replace(" ", "-"));
       tempPeriodRecords.push(record.history);
     }
+    console.log("test category", tempPeriodRecords);
     this.setState({ periodRecords: tempPeriodRecords, loaded: true });
   }
 
@@ -308,3 +309,5 @@ export const RenderSelection = (props: RenderSelectionPros) => {
     </select>
   );
 };
+
+export const PaymentCategory = ["Uncategorized", "Education", "Shopping", "Entertainment", "Restaurant", "Groceries"];

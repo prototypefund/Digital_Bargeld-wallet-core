@@ -66,7 +66,7 @@ export interface MessageMap {
     response: void;
   };
   "confirm-pay": {
-    request: { proposalId: number; sessionId?: string };
+    request: { proposalId: number; sessionId?: string; category?: string};
     response: walletTypes.ConfirmPayResult;
   };
   "check-pay": {

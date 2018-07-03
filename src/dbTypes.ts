@@ -839,9 +839,14 @@ export interface PurchaseRecord {
   abortDone: boolean;
 
   /**
-   * Get total cost(total amount + fee)
+   * Get total cost(total amount + fee).
    */
   totalCost: string;
+
+  /**
+   * Put payment into specific category.
+   */
+  paymentCategory?: string;
 }
 
 

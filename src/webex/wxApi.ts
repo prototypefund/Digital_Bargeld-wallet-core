@@ -231,8 +231,8 @@ export function checkPay(proposalId: number): Promise<CheckPayResult> {
 /**
  * Pay for a proposal.
  */
-export function confirmPay(proposalId: number, sessionId: string | undefined): Promise<ConfirmPayResult> {
-  return callBackend("confirm-pay", { proposalId, sessionId });
+export function confirmPay(proposalId: number, sessionId: string | undefined, category?: string): Promise<ConfirmPayResult> {
+  return callBackend("confirm-pay", { proposalId, sessionId, category });
 }
 
 /**
