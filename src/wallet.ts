@@ -3060,27 +3060,31 @@ export class Wallet {
     let testCur = new Date();
     const oneDay = {...purchases[0]};
     oneDay.timestamp = testCur.getTime();
+    oneDay.paymentCategory = "Education";
     purchases.push(oneDay);
 
     testCur = new Date();
     const oneWeek = {...purchases[0]};
     oneWeek.timestamp = new Date(testCur.setDate(testCur.getDate() - 3)).getTime();
+    oneWeek.paymentCategory = "Shopping";
     purchases.push(oneWeek);
 
     testCur = new Date();
     const oneMonth = {...purchases[0]};
     oneMonth.timestamp = new Date(testCur.setDate(testCur.getDate() - 15)).getTime();
+    oneMonth.paymentCategory = "Entertainment";
     purchases.push(oneMonth);
 
     testCur = new Date();
     const halfYear = {...purchases[0]};
     halfYear.timestamp = new Date(testCur.setMonth(testCur.getMonth() - 3)).getTime();
+    halfYear.paymentCategory = "Restaurant";
     purchases.push(halfYear);
 
     testCur = new Date();
     const oneYear = {...purchases[0]};
     oneYear.timestamp = new Date(testCur.setMonth(testCur.getMonth() - 9)).getTime();
-    // oneYear.finished = false;
+    oneYear.paymentCategory = "Groceries";
     purchases.push(oneYear);
     // end of the function
 
