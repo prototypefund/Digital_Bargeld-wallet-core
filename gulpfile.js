@@ -61,6 +61,7 @@ const paths = {
       "decl/jed.d.ts",
       "decl/chrome/chrome.d.ts",
       "decl/urijs.d.ts",
+      "decl/improve-user-interface.d.ts",
     ],
     test: [
         "src/**/*-test*.ts",

@@ -33,6 +33,8 @@ import { Bar, BarChart, Cell, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } fro
 import { AmountJson } from "../../amounts";
 import { HistoryRecord } from "../../walletTypes";
 
+import { Line } from "rc-progress";
+
 
 interface Category {
   category: string;

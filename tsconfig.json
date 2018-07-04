@@ -24,6 +24,7 @@
     "decl/chrome/chrome.d.ts",
     "decl/jed.d.ts",
     "decl/urijs.d.ts",
+    "decl/improve-user-interface.d.ts",
     "src/amounts.ts",
     "src/checkable.ts",
     "src/crypto/cryptoApi-test.ts",
