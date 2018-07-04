@@ -35,7 +35,6 @@ import { HistoryRecord } from "../../walletTypes";
 
 import { Line } from "rc-progress";
 
-
 interface Category {
   category: string;
   amount?: AmountJson;
@@ -75,6 +74,58 @@ interface TotalAmountRecord {
   historyAmount: AmountJson;
   period: string;
 }
+
+interface RenderBudgetChartPros {
+  amountsArray: TotalAmountRecord[];
+  budgetArray: number[];
+}
+
+const RenderBudgetChar = (props: RenderBudgetChartPros) => {
+  const listItems = props.amountsArray.map( (value, index) => {
+    const totalAmount = Amounts.add(value.historyAmount, value.curAmount).amount;
+    const budget = props.budgetArray[index];
+    let percentage = 100;
+    if (budget !== undefined && budget !== 0) {
+      percentage = (Amounts.toFloat(totalAmount) / budget) * 100;
+      if (percentage > 100) {
+        percentage = 100;
+      }
+    }
+    const item = (
+      <div style={{
+        border: "1px solid black",
+        borderRadius: 10,
+        margin: "0.5em",
+        padding: "0.5em",
+        textAlign: "left",
+        display: "flex",
+        flexFlow: "row wrap",
+        justifyContent: "space-around",
+        alignItems: "center",
+      }} key={index}>
+        <p style={{
+          display: "inline-block",
+          // verticalAlign: "middle",
+        }}>{value.period}</p>
+        <div style={{
+          display: "inline-block",
+          width: 300,
+          // verticalAlign: "middle",
+        }}>
+          <p>Test Test Test</p>
+          <Line percent={percentage} strokeWidth="4" strokeColor="#2db7f5" trailWidth="4"/>
+        </div>
+      </div>
+    );
+    return item;
+  });
+
+  return (
+    <div>
+      {listItems}
+    </div>
+  );
+};
 
 interface RenderHistoryChartPros {
   amountsArray: TotalAmountRecord[];
@@ -153,10 +204,10 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     this.periods = ["one day", "one week", "one month", "half year", "one year"];
     this.modes = ["history record", "category", "budget"];
     // set first element to be all category
-    this.categories = ["All Category", ...PaymentCategory];
+    this.categories = ["All Categories", ...PaymentCategory];
     this.state = {
       displayCategory: this.categories[0],
-      displayMode: this.modes[0],
+      displayMode: this.modes[2],
       // displayPeriod: this.periods[0],
       loaded: false,
       periodRecords: [],
@@ -233,6 +284,16 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
 
     let displayContent = null;
     if (this.state.loaded) {
+      const amountArray: TotalAmountRecord[] = [];
+      this.state.periodRecords.forEach(
+        (item, index) => {
+          const history = getAmountSum(item);
+          amountArray.push({
+            curAmount: this.props.amount,
+            historyAmount: history,
+            period: this.periods[index],
+          });
+        });
       // const displayData = this.state.periodRecords[this.periods.indexOf(this.state.displayPeriod)];
       if (this.state.displayMode === "category") {
         const testArr: Category[] = [];
@@ -243,17 +304,12 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
         );
       } else if (this.state.displayMode === "budget") {
         console.log("test ===", "bbb");
+        displayContent = (
+          <RenderBudgetChar
+            amountsArray={amountArray}
+            budgetArray={[5, 6, 7, 8, 9]}/>
+        );
       } else {
-        const amountArray: TotalAmountRecord[] = [];
-        this.state.periodRecords.forEach(
-          (item, index) => {
-            const history = getAmountSum(item);
-            amountArray.push({
-              curAmount: this.props.amount,
-              historyAmount: history,
-              period: this.periods[index],
-            });
-          });
         displayContent = (
           <RenderHistoryRecordChart
             amountsArray={amountArray}/>
