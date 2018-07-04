@@ -110,7 +110,6 @@ const RenderHistoryRecordChart = (props: RenderHistoryChartPros) => {
     };
     data.push(dataItem);
   }
-  console.log("test data", data);
   const currency = props.amountsArray[0].curAmount.currency;
 
   return (
@@ -135,6 +134,7 @@ interface TrackMoneyPros {
 }
 
 interface TrackMoneyState {
+  displayCategory: string;
   displayMode: string;
   // displayPeriod: string;
   loaded: boolean;
@@ -144,13 +144,16 @@ interface TrackMoneyState {
 export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState> {
   periods: string[];
   modes: string[];
+  categories: string[];
 
   constructor(props: TrackMoneyPros) {
     super(props);
     this.periods = ["one day", "one week", "one month", "half year", "one year"];
     this.modes = ["history record", "category", "budget"];
+    // set first element to be all category
+    this.categories = ["All Category", ...PaymentCategory];
     this.state = {
-      // Need to fix
+      displayCategory: this.categories[0],
       displayMode: this.modes[0],
       // displayPeriod: this.periods[0],
       loaded: false,
@@ -175,6 +178,9 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
   // periodsHandler = (event: React.FormEvent<HTMLSelectElement>) => {
   //   this.setState({ displayPeriod: event.currentTarget.value });
   // }
+  categoryHandler = (event: React.FormEvent<HTMLSelectElement>) => {
+    this.setState({ displayCategory: event.currentTarget.value});
+  }
 
   modesHandler = (event: React.FormEvent<HTMLSelectElement>) => {
     this.setState({ displayMode: event.currentTarget.value });
@@ -186,14 +192,23 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
         fontSize: "large",
       }}>
         <strong>Your </strong><RenderSelection options={this.modes} selectHandler={this.modesHandler}/>
-        <strong> of last </strong>
-        <RenderSelection options={this.periods} selectHandler={() => ""}/>
+        <strong> in </strong>
+        <RenderSelection options={this.categories} selectHandler={this.categoryHandler}/>
       </div>
     );
 
     const getAmountSum = (periodRecord: HistoryRecord[]) => {
       let historyAmount = Amounts.getZero(this.props.amount.currency);
       for (const p of periodRecord) {
+        if (!p.detail.category) {
+          p.detail.category = "Uncategorized";
+        }
+        // set first element in categories to be all category.
+        if (this.state.displayCategory !== this.categories[0]) {
+          if (p.detail.category !== this.state.displayCategory) {
+            continue;
+          }
+        }
         if (p.type === "pay") {
           if (p.detail.totalCost !== undefined) {
             if (this.props.amount.currency === Amounts.parseOrThrow(p.detail.totalCost).currency) {
@@ -243,55 +258,46 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
         );
       }
     }
+
+    const renderButton = () => (
+      <div style={{
+        marginTop: "1em",
+        textAlign: "center",
+      }}>
+        <button className="pure-button button-success"
+                value="pay"
+                onClick={this.props.buttonHandler}>
+          Pay</button>
+        &nbsp;
+        <button className="pure-button button-secondary"
+                value="cancel"
+                onClick={this.props.buttonHandler}>
+          Cancel</button>
+      </div>
+    );
     if (this.state.loaded) {
       return (
         <Modal>
-          {headerOptions}
-          {displayContent}
           <div style={{
-            marginTop: "1em",
-            textAlign: "center",
+            width: 500,
           }}>
-            <button className="pure-button button-success"
-                    value="pay"
-                    onClick={this.props.buttonHandler}>
-              Pay</button>
-            &nbsp;
-            <button className="pure-button button-secondary"
-                    value="cancel"
-                    onClick={this.props.buttonHandler}>
-              Cancel</button>
+            {headerOptions}
+            {displayContent}
+            {renderButton()}
           </div>
         </Modal>
       );
     } else {
       return (
-        <p>Fetching data...</p>
+        <Modal>
+          <p style={{
+            width: 500,
+          }}>Fetching data...</p>
+        </Modal>
       );
     }
   }
 }
-
-interface RenderCategoryProps {
-  selectHandler: (event: React.FormEvent<HTMLSelectElement>) => void;
-}
-
-export const RenderCategory = (props: RenderCategoryProps) => {
-  return (
-    <div>
-      <p style={{display: "inline-block"}}>Choose a category:</p>
-      &nbsp;
-      <select onChange={props.selectHandler}>
-        <option value="Uncategorized">Uncategorized</option>
-        <option value="Education">Education</option>
-        <option value="Shopping">Shopping</option>
-        <option value="Entertainment">Entertainment</option>
-        <option value="Restaurant">Restaurant</option>
-        <option value="Groceries">Groceries</option>
-      </select>
-    </div>
-  );
-};
 
 interface RenderSelectionPros {
   selectHandler: (event: React.FormEvent<HTMLSelectElement>) => void;

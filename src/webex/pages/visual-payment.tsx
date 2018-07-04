@@ -128,7 +128,6 @@ export const VisualPayment = (props: VisualPaymentProps) => {
     totalDelayTime += denominationDelay[denominations.indexOf(value)];
     return MoneyCardItem;
   });
-  console.log("totalDelay", totalDelayTime);
   props.animationFinish(totalDelayTime);
 
   return (
