@@ -412,7 +412,8 @@ class ContractPrompt extends React.Component<ContractPromptProps, ContractPrompt
       trackingRecod = (
         <TrackMoney
           amount={totalAmount}
-          buttonHandler={this.processPaymentInTrackingRecord}/>
+          buttonHandler={this.processPaymentInTrackingRecord}
+          category={this.state.category}/>
       );
     }
 

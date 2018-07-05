@@ -215,6 +215,7 @@ const RenderHistoryRecordChart = (props: RenderHistoryChartPros) => {
 interface TrackMoneyPros {
   amount: AmountJson;
   buttonHandler: (event: React.MouseEvent<HTMLInputElement>) => void;
+  category: string;
 }
 
 interface TrackMoneyState {
@@ -242,7 +243,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     this.state = {
       budgetMode: [this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0]],
       displayCategory: this.categories[0],
-      displayMode: this.modes[2],
+      displayMode: this.modes[0],
       // displayPeriod: this.periods[0],
       loaded: false,
       periodRecords: [],
@@ -339,6 +340,15 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
       return historyAmount;
     };
 
+    const getCurrentAmount = () => {
+      if (this.state.displayCategory !== this.categories[0]) {
+        if (this.props.category !== this.state.displayCategory) {
+          return Amounts.getZero(this.props.amount.currency);
+        }
+      }
+      return this.props.amount;
+    }
+
     const getPeriod = (period: string) => {
       switch (period) {
         case "one day": {
@@ -368,8 +378,9 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
       this.state.periodRecords.forEach(
         (item, index) => {
           const history = getAmountSum(item);
+          const current = getCurrentAmount();
           amountArray.push({
-            curAmount: this.props.amount,
+            curAmount: current,
             historyAmount: history,
             period: getPeriod(this.periods[index]),
           });
