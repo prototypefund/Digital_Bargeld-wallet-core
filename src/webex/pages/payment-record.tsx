@@ -60,7 +60,7 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
     let color = "#2c99f4";
     let diff: number = -1;
     if (budget !== -1 && budget !== 0) {
-      percentage = (Amounts.toFloat(totalAmount) / budget) * 100;
+      percentage = (parseFloat(Amounts.toString(totalAmount).split(":")[1]) / budget) * 100;
       if (percentage > 100) {
         percentage = 100;
         color = "#ef3139";
@@ -68,7 +68,8 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
     }
 
     if (budget !== -1) {
-      const minus = Amounts.toFloat(Amounts.sub(totalAmount, Amounts.fromFloat(budget, totalAmount.currency)).amount);
+      const minus = parseFloat(Amounts.toString(Amounts.sub(totalAmount,
+        Amounts.fromFloat(budget, totalAmount.currency)).amount).split(":")[1]);
       if (minus > 0) {
         diff = minus;
         color = "#ef3139";
@@ -78,7 +79,7 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
     const normalDisplay = () => (
       <div>
         <p>
-          {totalAmount.currency}: {Amounts.toFloat(totalAmount)} of {budget}
+          {totalAmount.currency}: {parseFloat(Amounts.toString(totalAmount).split(":")[1])} of {budget}
           {diff !== -1 ? <span> Over {diff}</span> : null }</p>
         <Line percent={percentage} strokeWidth="4" strokeColor={color} trailWidth="4"/>
         <a href="" id={index.toString()} onClick={props.showSettingHandler}>Edit Budget</a>
@@ -87,16 +88,16 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
 
     const noBudgetDisplay = () => (
       <div>
-        <p>{totalAmount.currency}: {Amounts.toFloat(totalAmount)}</p>
+        <p>{totalAmount.currency}: {parseFloat(Amounts.toString(totalAmount).split(":")[1])}</p>
         <a href="" id={index.toString()} onClick={props.showSettingHandler}>Set Budget</a>
       </div>
     );
 
     const changeBudgetDisplay = () => (
       <div>
-        <p>{totalAmount.currency}: {Amounts.toFloat(totalAmount)}</p>
+        <p>{totalAmount.currency}: {parseFloat(Amounts.toString(totalAmount).split(":")[1])}</p>
         <form onSubmit={props.setBudgetHandler} id={index.toString()}>
-          <input type="text" name="budget" size={3} pattern="\\d+(\\.\\d{0,2})?" />
+          <input type="text" name="budget" size={8} pattern="\\d+(\\.\\d{0,2})?" />
           <input type="submit" value="Set" />
         </form>
       </div>
@@ -162,8 +163,8 @@ const RenderHistoryRecordChart = (props: RenderHistoryChartPros) => {
   const data = [];
   for (const TotalAmount of props.amountsArray) {
     const dataItem: {name: string; History: number; Current: number } = {
-      Current: Amounts.toFloat(TotalAmount.curAmount),
-      History: Amounts.toFloat(TotalAmount.historyAmount),
+      Current: parseFloat(Amounts.toString(TotalAmount.curAmount).split(":")[1]),
+      History: parseFloat(Amounts.toString(TotalAmount.historyAmount).split(":")[1]),
       name: TotalAmount.period,
     };
     data.push(dataItem);
@@ -211,7 +212,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
   constructor(props: TrackMoneyPros) {
     super(props);
     this.periods = ["one day", "one week", "one month", "half year", "one year"];
-    this.modes = ["history record", "budget"];
+    this.modes = ["history record", "budget & spending"];
     this.budgetMode = ["display", "setting"];
     // set first element to be all category
     this.categories = ["All Categories", ...PaymentCategory];

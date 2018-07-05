@@ -63,7 +63,7 @@ const MoneyCard = (props: MoneyCardPros) => {
       zIndex: 200,
     }}>
       <i18n.Translate wrap="p">
-        <span>{Amounts.toFloat(props.amount) + " " + props.amount.currency}</span>
+        <span>{parseFloat(Amounts.toString(props.amount).split(":")[1]) + " " + props.amount.currency}</span>
       </i18n.Translate>
     </div>
   );
@@ -137,7 +137,8 @@ export const VisualPayment = (props: VisualPaymentProps) => {
         width: "60vw",
       }}>
         <i18n.Translate wrap="h2">
-          What you will cost: <span>{Amounts.toFloat(props.amount) + " " + props.amount.currency}</span>
+          What you will cost: <span>{parseFloat(Amounts.toString(props.amount)
+          .split(":")[1]) + " " + props.amount.currency}</span>
         </i18n.Translate>
         {listItems}
         <button className="pure-button button-destructive"
