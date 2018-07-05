@@ -35,6 +35,8 @@ import { HistoryRecord } from "../../walletTypes";
 
 import { Line } from "rc-progress";
 
+import "./payment-record.css";
+
 interface Category {
   category: string;
   amount?: AmountJson;
@@ -78,6 +80,8 @@ interface TotalAmountRecord {
 interface RenderBudgetChartPros {
   amountsArray: TotalAmountRecord[];
   budgetArray: number[];
+  displayMode: string[];
+  showSettingHandler: (event: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
 const RenderBudgetChar = (props: RenderBudgetChartPros) => {
@@ -85,35 +89,52 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
     const totalAmount = Amounts.add(value.historyAmount, value.curAmount).amount;
     const budget = props.budgetArray[index];
     let percentage = 100;
+    let color = "#2c99f4";
+    let diff: number = -1;
     if (budget !== undefined && budget !== 0) {
       percentage = (Amounts.toFloat(totalAmount) / budget) * 100;
       if (percentage > 100) {
+        diff = Amounts.toFloat(Amounts.sub(totalAmount, Amounts.fromFloat(budget, totalAmount.currency)).amount);
         percentage = 100;
+        color = "#ef3139";
       }
     }
+
+    const normalDisplay = () => (
+      <div>
+        <p>{totalAmount.currency}: {Amounts.toFloat(totalAmount)} of {budget}{diff !== -1 ? <span> Over {diff}</span> : null }</p>
+        <Line percent={percentage} strokeWidth="4" strokeColor={color} trailWidth="4"/>
+        <a href="" id={index.toString()} onClick={props.showSettingHandler}>Test</a>
+      </div>
+    );
+
+    const renderContent = () => {
+      if (budget !== undefined) {
+        if (props.displayMode[index] === "display") {
+          return (
+            <div>
+              {normalDisplay()}
+            </div>
+          );
+        } else {
+          return (
+            <div>
+              need more
+            </div>
+          );
+        }
+      } else {
+        return (
+          <div>Need more</div>
+        );
+      }
+    };
+
     const item = (
-      <div style={{
-        border: "1px solid black",
-        borderRadius: 10,
-        margin: "0.5em",
-        padding: "0.5em",
-        textAlign: "left",
-        display: "flex",
-        flexFlow: "row wrap",
-        justifyContent: "space-around",
-        alignItems: "center",
-      }} key={index}>
-        <p style={{
-          display: "inline-block",
-          // verticalAlign: "middle",
-        }}>{value.period}</p>
-        <div style={{
-          display: "inline-block",
-          width: 300,
-          // verticalAlign: "middle",
-        }}>
-          <p>Test Test Test</p>
-          <Line percent={percentage} strokeWidth="4" strokeColor="#2db7f5" trailWidth="4"/>
+      <div className="budget-card" key={index}>
+        <p>{value.period}</p>
+        <div className="budget-card-right-part">
+          {renderContent()}
         </div>
       </div>
     );
@@ -187,6 +208,7 @@ interface TrackMoneyPros {
 }
 
 interface TrackMoneyState {
+  budgetMode: string[];
   displayCategory: string;
   displayMode: string;
   // displayPeriod: string;
@@ -198,14 +220,17 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
   periods: string[];
   modes: string[];
   categories: string[];
+  budgetMode: string[];
 
   constructor(props: TrackMoneyPros) {
     super(props);
     this.periods = ["one day", "one week", "one month", "half year", "one year"];
     this.modes = ["history record", "category", "budget"];
+    this.budgetMode = ["display", "setting"];
     // set first element to be all category
     this.categories = ["All Categories", ...PaymentCategory];
     this.state = {
+      budgetMode: [this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0]],
       displayCategory: this.categories[0],
       displayMode: this.modes[2],
       // displayPeriod: this.periods[0],
@@ -237,6 +262,14 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
 
   modesHandler = (event: React.FormEvent<HTMLSelectElement>) => {
     this.setState({ displayMode: event.currentTarget.value });
+  }
+
+  showSettingHandler = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    const tempArr = this.state.budgetMode;
+    tempArr[parseInt(event.currentTarget.id, 10)] = this.budgetMode[1];
+    console.log("test", event.currentTarget.id);
+    this.setState({ budgetMode: tempArr });
   }
 
   render() {
@@ -307,7 +340,9 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
         displayContent = (
           <RenderBudgetChar
             amountsArray={amountArray}
-            budgetArray={[5, 6, 7, 8, 9]}/>
+            budgetArray={[5, 6, 7, 2]}
+            displayMode={this.state.budgetMode}
+            showSettingHandler={this.showSettingHandler}/>
         );
       } else {
         displayContent = (
