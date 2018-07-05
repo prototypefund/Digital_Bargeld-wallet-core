@@ -31,6 +31,7 @@ import * as wxApi from "../wxApi";
 
 import { Bar, BarChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
 import { AmountJson } from "../../amounts";
+import { CategoryBudget } from "../../dbTypes";
 import { HistoryRecord } from "../../walletTypes";
 
 import { Line } from "rc-progress";
@@ -58,11 +59,18 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
     let percentage = 100;
     let color = "#2c99f4";
     let diff: number = -1;
-    if (budget !== undefined && budget !== 0) {
+    if (budget !== -1 && budget !== 0) {
       percentage = (Amounts.toFloat(totalAmount) / budget) * 100;
       if (percentage > 100) {
-        diff = Amounts.toFloat(Amounts.sub(totalAmount, Amounts.fromFloat(budget, totalAmount.currency)).amount);
         percentage = 100;
+        color = "#ef3139";
+      }
+    }
+
+    if (budget !== -1) {
+      const minus = Amounts.toFloat(Amounts.sub(totalAmount, Amounts.fromFloat(budget, totalAmount.currency)).amount);
+      if (minus > 0) {
+        diff = minus;
         color = "#ef3139";
       }
     }
@@ -88,14 +96,14 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
       <div>
         <p>{totalAmount.currency}: {Amounts.toFloat(totalAmount)}</p>
         <form onSubmit={props.setBudgetHandler} id={index.toString()}>
-          <input type="text" name="budget" size={3} />
+          <input type="text" name="budget" size={3} pattern="\\d+(\\.\\d{0,2})?" />
           <input type="submit" value="Set" />
         </form>
       </div>
     );
 
     const renderContent = () => {
-      if (budget !== undefined) {
+      if (budget !== -1) {
         if (props.displayMode[index] === "display") {
           return (
             <div>
@@ -191,6 +199,7 @@ interface TrackMoneyState {
   // displayPeriod: string;
   loaded: boolean;
   periodRecords: HistoryRecord[][];
+  categoryBudget: CategoryBudget[];
 }
 
 export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState> {
@@ -208,6 +217,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     this.categories = ["All Categories", ...PaymentCategory];
     this.state = {
       budgetMode: [this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0]],
+      categoryBudget: [],
       displayCategory: this.categories[0],
       displayMode: this.modes[0],
       // displayPeriod: this.periods[0],
@@ -227,7 +237,26 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
       tempPeriodRecords.push(record.history);
     }
     console.log("test category", tempPeriodRecords);
-    this.setState({ periodRecords: tempPeriodRecords, loaded: true });
+    this.setState({ periodRecords: tempPeriodRecords });
+
+    const tempCategoryBudgets = [];
+    for (const curCategory of this.categories) {
+      let categoryBudget = await wxApi.getCategoryBudget(curCategory);
+      if (categoryBudget === null) {
+        const tempCategoryBudget: CategoryBudget = {category: curCategory, budget: []};
+        let i = 0;
+        while (i < this.periods.length) {
+          tempCategoryBudget.budget.push(-1);
+          i++;
+        }
+        categoryBudget = tempCategoryBudget;
+        wxApi.updateCategoryBudget(categoryBudget);
+      }
+      tempCategoryBudgets.push(categoryBudget);
+    }
+    console.log("test db", tempCategoryBudgets);
+    this.setState({ categoryBudget: tempCategoryBudgets });
+    this.setState({ loaded: true });
   }
 
   // periodsHandler = (event: React.FormEvent<HTMLSelectElement>) => {
@@ -260,7 +289,18 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     const tempArr = this.state.budgetMode;
     tempArr[parseInt(event.currentTarget.id, 10)] = this.budgetMode[0];
     this.setState({ budgetMode: tempArr });
+
     console.log("test", event.currentTarget[0].value);
+    const index = this.categories.indexOf(this.state.displayCategory);
+    const tempCategoryBudgetArr = this.state.categoryBudget;
+    const tempCategoryBudget = tempCategoryBudgetArr[index];
+    const tempBudgetArr = tempCategoryBudget.budget;
+    tempBudgetArr[parseInt(event.currentTarget.id, 10)] = parseFloat(event.currentTarget[0].value);
+    tempCategoryBudget.budget = tempBudgetArr;
+    wxApi.updateCategoryBudget(tempCategoryBudget);
+    tempCategoryBudgetArr[index] = tempCategoryBudget;
+    console.log("test setting", tempCategoryBudgetArr);
+    this.setState({ categoryBudget: tempCategoryBudgetArr});
   }
 
   render() {
@@ -361,7 +401,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
         displayContent = (
           <RenderBudgetChar
             amountsArray={amountArray}
-            budgetArray={[5, 6, 7, 2]}
+            budgetArray={this.state.categoryBudget[this.categories.indexOf(this.state.displayCategory)].budget}
             displayMode={this.state.budgetMode}
             setBudgetHandler={this.setBudgetHandler}
             showSettingHandler={this.showSettingHandler}/>

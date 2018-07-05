@@ -206,16 +206,24 @@ export interface MessageMap {
     response: void;
   };
   "get-user-config": {
-    request: { operation: string }
+    request: { operation: string };
     response: dbTypes.UserConfiguration;
   };
   "update-user-config": {
-    request: { userConfiguration: dbTypes.UserConfiguration }
+    request: { userConfiguration: dbTypes.UserConfiguration };
     response: void;
   };
   "get-payment-statistic": {
-    request: { timePeriod: string }
+    request: { timePeriod: string };
     response: { history: walletTypes.HistoryRecord[]};
+  };
+  "get-category-budget": {
+    request: { category: string }
+    response: dbTypes.CategoryBudget;
+  };
+  "update-category-budget": {
+    request: { categoryBudget: dbTypes.CategoryBudget };
+    response: void;
   };
 }
 

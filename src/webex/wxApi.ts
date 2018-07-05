@@ -24,6 +24,7 @@
  */
 import { AmountJson } from "../amounts";
 import {
+  CategoryBudget,
   CoinRecord,
   CurrencyRecord,
   DenominationRecord,
@@ -31,7 +32,8 @@ import {
   PreCoinRecord,
   ProposalDownloadRecord,
   PurchaseRecord,
-  ReserveRecord, UserConfiguration,
+  ReserveRecord,
+  UserConfiguration,
 } from "../dbTypes";
 import {
   CheckPayResult,
@@ -404,4 +406,12 @@ export function updateUserConfig(userConfiguration: UserConfiguration): Promise<
 
 export function getPaymentStatistic(timePeriod: string): Promise<{ history: HistoryRecord[] }> {
   return callBackend("get-payment-statistic", { timePeriod });
+}
+
+export function getCategoryBudget(category: string): Promise<CategoryBudget> {
+  return callBackend("get-category-budget", { category });
+}
+
+export function updateCategoryBudget(categoryBudget: CategoryBudget): Promise<void> {
+  return callBackend("update-category-budget", { categoryBudget });
 }

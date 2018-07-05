@@ -52,6 +52,7 @@ import URI = require("urijs");
 import axios from "axios";
 
 import {
+  CategoryBudget,
   CoinRecord,
   CoinStatus,
   CoinsReturnRecord,
@@ -3046,8 +3047,18 @@ export class Wallet {
     return config;
   }
 
-  async  updateUserConfig(userConfiguration: UserConfiguration): Promise<void> {
+  async updateUserConfig(userConfiguration: UserConfiguration): Promise<void> {
     await this.q().put(Stores.userConfiguration, userConfiguration).finish();
+    this.notifier.notify();
+  }
+
+  async getCategoryBudget(category: string): Promise<CategoryBudget|undefined> {
+    const categoryBudget = await this.q().get(Stores.categoryBudget, category);
+    return categoryBudget;
+  }
+
+  async updateCategoryBudget(categoryBudget: CategoryBudget): Promise<void> {
+    await this.q().put(Stores.categoryBudget, categoryBudget).finish();
     this.notifier.notify();
   }
 

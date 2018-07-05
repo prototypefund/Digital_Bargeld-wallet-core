@@ -350,6 +350,15 @@ function handleMessage(sender: MessageSender,
       }
       return needsWallet().getPaymentStatistic(detail.timePeriod);
     }
+    case "get-category-budget": {
+      if (typeof detail.category !== "string") {
+        return Promise.reject(Error("category missing"));
+      }
+      return needsWallet().getCategoryBudget(detail.category);
+    }
+    case "update-category-budget": {
+      return needsWallet().updateCategoryBudget(detail.categoryBudget);
+    }
     default:
       // Exhaustiveness check.
       // See https://www.typescriptlang.org/docs/handbook/advanced-types.html

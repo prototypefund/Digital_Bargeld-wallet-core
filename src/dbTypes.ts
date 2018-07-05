@@ -928,6 +928,11 @@ export interface UserConfiguration {
   toggle: boolean;
 }
 
+export interface CategoryBudget {
+  category: string;
+  budget: number[];
+}
+
 
 /* tslint:disable:completed-docs */
 
@@ -1042,6 +1047,7 @@ export namespace Stores {
   export const tips = new TipsStore();
   export const senderWires = new SenderWiresStore();
   export const userConfiguration = new Store<UserConfiguration>("userConfiguration", {keyPath: "operation"});
+  export const categoryBudget = new Store<CategoryBudget>("categoryBudget", {keyPath: "category"});
 }
 
 /* tslint:enable:completed-docs */
