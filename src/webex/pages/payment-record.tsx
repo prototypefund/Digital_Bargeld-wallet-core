@@ -29,47 +29,13 @@ import "../style/animation.css";
 import * as Amounts from "../../amounts";
 import * as wxApi from "../wxApi";
 
-import { Bar, BarChart, Cell, Legend, Pie, PieChart, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Legend, Tooltip, XAxis, YAxis } from "recharts";
 import { AmountJson } from "../../amounts";
 import { HistoryRecord } from "../../walletTypes";
 
 import { Line } from "rc-progress";
 
 import "./payment-record.css";
-
-interface Category {
-  category: string;
-  amount?: AmountJson;
-  budget?: AmountJson;
-}
-
-interface RenderCategoryChartProps {
-  categorys: Category[];
-}
-
-const RenderCategoryChart = (props: RenderCategoryChartProps) => {
-  const data = [];
-  for (const categoryItem of props.categorys) {
-    const dataItem: { name: string; value: number } = {
-      name: categoryItem.category, value: (categoryItem.amount ? Amounts.toFloat(categoryItem.amount) : 0)};
-    data.push(dataItem);
-  }
-  // Hard Code categoires color
-  const COLORS = ["#0088FE", "#FFBB28", "#bebaec", "#FF8042", "#00C49F", "#585858"];
-  const CATEGORYS = ["Education", "Entertainment", "Groceries", "Restaurant", "Shopping", "Uncategorized"];
-  console.log("test", CATEGORYS.indexOf("test"));
-  return (
-    <PieChart width={500} height={250} margin={{top: 20, right: 30, left: 20, bottom: 5}}>
-      <Pie data={data} dataKey="value" innerRadius={60} outerRadius={100} fill="#82ca9d">
-        {
-          data.map((entry, index) => <Cell
-            fill={COLORS[CATEGORYS.indexOf(entry.name) === -1 ? COLORS.length - 1 : CATEGORYS.indexOf(entry.name)]}/>)
-        }
-      </Pie>
-      <Tooltip/>
-    </PieChart>
-  );
-};
 
 interface TotalAmountRecord {
   curAmount: AmountJson;
@@ -236,7 +202,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
   constructor(props: TrackMoneyPros) {
     super(props);
     this.periods = ["one day", "one week", "one month", "half year", "one year"];
-    this.modes = ["history record", "category", "budget"];
+    this.modes = ["history record", "budget"];
     this.budgetMode = ["display", "setting"];
     // set first element to be all category
     this.categories = ["All Categories", ...PaymentCategory];
@@ -347,7 +313,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
         }
       }
       return this.props.amount;
-    }
+    };
 
     const getPeriod = (period: string) => {
       switch (period) {
@@ -385,16 +351,13 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
             period: getPeriod(this.periods[index]),
           });
         });
-      // const displayData = this.state.periodRecords[this.periods.indexOf(this.state.displayPeriod)];
-      if (this.state.displayMode === "category") {
-        const testArr: Category[] = [];
-        testArr.push({category: "Education", amount: Amounts.parse("KUDOS:0")});
-        testArr.push({category: "test2", amount: Amounts.parse("KUDOS:20.5")});
+
+      if (this.state.displayMode === this.modes[0]) {
         displayContent = (
-          <RenderCategoryChart categorys={testArr}/>
+          <RenderHistoryRecordChart
+            amountsArray={amountArray}/>
         );
-      } else if (this.state.displayMode === "budget") {
-        console.log("test ===", "bbb");
+      } else {
         displayContent = (
           <RenderBudgetChar
             amountsArray={amountArray}
@@ -402,11 +365,6 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
             displayMode={this.state.budgetMode}
             setBudgetHandler={this.setBudgetHandler}
             showSettingHandler={this.showSettingHandler}/>
-        );
-      } else {
-        displayContent = (
-          <RenderHistoryRecordChart
-            amountsArray={amountArray}/>
         );
       }
     }
