@@ -10,6 +10,10 @@
     align-items: center;
 }
 
+.budget-card p {
+    font-size: large;
+}
+
 .budget-card-right-part {
     width: 300px;
     text-align: right;
@@ -17,7 +21,7 @@
 
 .budget-card-right-part p {
     margin-top: 0;
-    margin-bottom: 0.3em;
+    margin-bottom: 0.1em;
 }
 
 .budget-card-right-part span {

@@ -81,6 +81,7 @@ interface RenderBudgetChartPros {
   amountsArray: TotalAmountRecord[];
   budgetArray: number[];
   displayMode: string[];
+  setBudgetHandler: (event: React.FormEvent<HTMLFormElement>) => void;
   showSettingHandler: (event: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
@@ -102,9 +103,28 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
 
     const normalDisplay = () => (
       <div>
-        <p>{totalAmount.currency}: {Amounts.toFloat(totalAmount)} of {budget}{diff !== -1 ? <span> Over {diff}</span> : null }</p>
+        <p>
+          {totalAmount.currency}: {Amounts.toFloat(totalAmount)} of {budget}
+          {diff !== -1 ? <span> Over {diff}</span> : null }</p>
         <Line percent={percentage} strokeWidth="4" strokeColor={color} trailWidth="4"/>
-        <a href="" id={index.toString()} onClick={props.showSettingHandler}>Test</a>
+        <a href="" id={index.toString()} onClick={props.showSettingHandler}>Edit Budget</a>
+      </div>
+    );
+
+    const noBudgetDisplay = () => (
+      <div>
+        <p>{totalAmount.currency}: {Amounts.toFloat(totalAmount)}</p>
+        <a href="" id={index.toString()} onClick={props.showSettingHandler}>Set Budget</a>
+      </div>
+    );
+
+    const changeBudgetDisplay = () => (
+      <div>
+        <p>{totalAmount.currency}: {Amounts.toFloat(totalAmount)}</p>
+        <form onSubmit={props.setBudgetHandler} id={index.toString()}>
+          <input type="text" name="budget" size={3} />
+          <input type="submit" value="Set" />
+        </form>
       </div>
     );
 
@@ -119,14 +139,24 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
         } else {
           return (
             <div>
-              need more
+              {changeBudgetDisplay()}
             </div>
           );
         }
       } else {
-        return (
-          <div>Need more</div>
-        );
+        if (props.displayMode[index] === "display") {
+          return (
+            <div>
+              {noBudgetDisplay()}
+            </div>
+          );
+        } else {
+          return (
+            <div>
+              {changeBudgetDisplay()}
+            </div>
+          );
+        }
       }
     };
 
@@ -142,7 +172,9 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
   });
 
   return (
-    <div>
+    <div style={{
+      marginTop: 20,
+    }}>
       {listItems}
     </div>
   );
@@ -153,34 +185,12 @@ interface RenderHistoryChartPros {
 }
 
 const RenderHistoryRecordChart = (props: RenderHistoryChartPros) => {
-  const getName = (period: string) => {
-    switch (period) {
-      case "one day": {
-        return "One Day";
-      }
-      case "one week": {
-        return "One Week";
-      }
-      case "one month": {
-        return "One Month";
-      }
-      case "half year": {
-        return "Half Year";
-      }
-      case "one year": {
-        return "One Year";
-      }
-      default: {
-        return "One Day";
-      }
-    }
-  };
   const data = [];
   for (const TotalAmount of props.amountsArray) {
     const dataItem: {name: string; History: number; Current: number } = {
       Current: Amounts.toFloat(TotalAmount.curAmount),
       History: Amounts.toFloat(TotalAmount.historyAmount),
-      name: getName(TotalAmount.period),
+      name: TotalAmount.period,
     };
     data.push(dataItem);
   }
@@ -258,10 +268,16 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
   // }
   categoryHandler = (event: React.FormEvent<HTMLSelectElement>) => {
     this.setState({ displayCategory: event.currentTarget.value});
+    this.setState({
+      budgetMode: [this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0]],
+    });
   }
 
   modesHandler = (event: React.FormEvent<HTMLSelectElement>) => {
     this.setState({ displayMode: event.currentTarget.value });
+    this.setState({
+      budgetMode: [this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0], this.budgetMode[0]],
+    });
   }
 
   showSettingHandler = (event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -270,6 +286,14 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     tempArr[parseInt(event.currentTarget.id, 10)] = this.budgetMode[1];
     console.log("test", event.currentTarget.id);
     this.setState({ budgetMode: tempArr });
+  }
+
+  setBudgetHandler = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const tempArr = this.state.budgetMode;
+    tempArr[parseInt(event.currentTarget.id, 10)] = this.budgetMode[0];
+    this.setState({ budgetMode: tempArr });
+    console.log("test", event.currentTarget[0].value);
   }
 
   render() {
@@ -315,6 +339,29 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
       return historyAmount;
     };
 
+    const getPeriod = (period: string) => {
+      switch (period) {
+        case "one day": {
+          return "One Day";
+        }
+        case "one week": {
+          return "One Week";
+        }
+        case "one month": {
+          return "One Month";
+        }
+        case "half year": {
+          return "Half Year";
+        }
+        case "one year": {
+          return "One Year";
+        }
+        default: {
+          return "One Day";
+        }
+      }
+    };
+
     let displayContent = null;
     if (this.state.loaded) {
       const amountArray: TotalAmountRecord[] = [];
@@ -324,7 +371,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
           amountArray.push({
             curAmount: this.props.amount,
             historyAmount: history,
-            period: this.periods[index],
+            period: getPeriod(this.periods[index]),
           });
         });
       // const displayData = this.state.periodRecords[this.periods.indexOf(this.state.displayPeriod)];
@@ -342,6 +389,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
             amountsArray={amountArray}
             budgetArray={[5, 6, 7, 2]}
             displayMode={this.state.budgetMode}
+            setBudgetHandler={this.setBudgetHandler}
             showSettingHandler={this.showSettingHandler}/>
         );
       } else {
