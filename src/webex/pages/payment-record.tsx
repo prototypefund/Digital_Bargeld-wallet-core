@@ -52,13 +52,18 @@ interface RenderBudgetChartPros {
   showSettingHandler: (event: React.MouseEvent<HTMLAnchorElement>) => void;
 }
 
+/**
+ * Component for budget setting
+ */
 const RenderBudgetChar = (props: RenderBudgetChartPros) => {
+  // For each time period in given list, render budget
   const listItems = props.amountsArray.map( (value, index) => {
     const totalAmount = Amounts.add(value.historyAmount, value.curAmount).amount;
     const budget = props.budgetArray[index];
     let percentage = 100;
     let color = "#2c99f4";
     let diff: number = -1;
+    // avoid overflow
     if (budget !== -1 && budget !== 0) {
       percentage = (parseFloat(Amounts.toString(totalAmount).split(":")[1]) / budget) * 100;
       if (percentage > 100) {
@@ -76,6 +81,7 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
       }
     }
 
+    // budget has been set
     const normalDisplay = () => (
       <div>
         <p>
@@ -86,6 +92,7 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
       </div>
     );
 
+    // budget has not been set
     const noBudgetDisplay = () => (
       <div>
         <p>{totalAmount.currency}: {parseFloat(Amounts.toString(totalAmount).split(":")[1])}</p>
@@ -93,6 +100,7 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
       </div>
     );
 
+    // reset the budget
     const changeBudgetDisplay = () => (
       <div>
         <p>{totalAmount.currency}: {parseFloat(Amounts.toString(totalAmount).split(":")[1])}</p>
@@ -103,6 +111,7 @@ const RenderBudgetChar = (props: RenderBudgetChartPros) => {
       </div>
     );
 
+    // decide the display mode for (1)budget has been set, (2)no budget set, (3)reset budget
     const renderContent = () => {
       if (budget !== -1) {
         if (props.displayMode[index] === "display") {
@@ -159,6 +168,9 @@ interface RenderHistoryChartPros {
   amountsArray: TotalAmountRecord[];
 }
 
+/**
+ * Component for spending visualization
+ */
 const RenderHistoryRecordChart = (props: RenderHistoryChartPros) => {
   const data = [];
   for (const TotalAmount of props.amountsArray) {
@@ -203,6 +215,9 @@ interface TrackMoneyState {
   categoryBudget: CategoryBudget[];
 }
 
+/**
+ * Main component for spending visualization and budget planning
+ */
 export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState> {
   periods: string[];
   modes: string[];
@@ -260,9 +275,6 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
     this.setState({ loaded: true });
   }
 
-  // periodsHandler = (event: React.FormEvent<HTMLSelectElement>) => {
-  //   this.setState({ displayPeriod: event.currentTarget.value });
-  // }
   categoryHandler = (event: React.FormEvent<HTMLSelectElement>) => {
     this.setState({ displayCategory: event.currentTarget.value});
     this.setState({
@@ -327,6 +339,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
             continue;
           }
         }
+        // plus payment record
         if (p.type === "pay") {
           if (p.detail.totalCost !== undefined) {
             if (this.props.amount.currency === Amounts.parseOrThrow(p.detail.totalCost).currency) {
@@ -338,6 +351,7 @@ export class TrackMoney extends React.Component<TrackMoneyPros, TrackMoneyState>
             }
           }
         }
+        // minus refund
         if (p.type === "refund") {
           if (this.props.amount.currency === p.detail.refundAmount.currency) {
             historyAmount = Amounts.sub(historyAmount, p.detail.refundAmount).amount;
@@ -455,6 +469,10 @@ interface RenderSelectionPros {
   options: string[];
 }
 
+
+/**
+ * Render select(dropdown list by given list)
+ */
 export const RenderSelection = (props: RenderSelectionPros) => {
   const optionLists = props.options.map( (value, index) => (
     <option key={index} value={value}>{value}</option>

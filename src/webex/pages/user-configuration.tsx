@@ -31,6 +31,9 @@ interface UserConfigurationState {
   loaded: boolean;
 }
 
+/**
+ * Component for user configuration
+ */
 class UserConfiguration extends React.Component<any, UserConfigurationState> {
   constructor(props: any) {
     super(props);
