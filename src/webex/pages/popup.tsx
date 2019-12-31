@@ -43,7 +43,10 @@ import {
 import * as wxApi from "../wxApi";
 
 import * as React from "react";
+import moment from 'moment';
 import { HistoryEvent } from "../../types/history";
+
+const { Fragment } = React
 
 function onUpdateNotification(f: () => void): () => void {
   const port = chrome.runtime.connect({ name: "notifications" });
@@ -202,6 +205,17 @@ function EmptyBalanceView() {
   );
 }
 
+/*
+* Returns true if the amount is diferent to 0 
+*/
+function notCero(amount: string) {
+  try {
+    return amount.split(":")[1] !== "0"
+  } catch {
+    return true
+  }
+}
+
 class WalletBalanceView extends React.Component<any, any> {
   private balance: WalletBalance;
   private gotError = false;
@@ -324,100 +338,187 @@ class WalletBalanceView extends React.Component<any, any> {
   }
 }
 
-function formatHistoryItem(historyItem: HistoryEvent) {
-  const d = historyItem;
-  console.log("hist item", historyItem);
+type HistoryItemProps = {
+  title?: string | JSX.Element
+  text?:string | JSX.Element
+  small?: string | JSX.Element
+}
+
+function HistoryItem({ title, text, small }:HistoryItemProps) {
+  return (
+    <Fragment>
+      {title? (<div className={'historyTitle'}>{title}</div>): null }
+      {text? (<div className={'historyText'}>{text}</div>): null }
+      {small? (<div className={'historySmall'}>{small}</div>): null }
+    </Fragment>
+  )
+}
+
+function formatHistoryItem(historyItem:HistoryEvent) {
   switch (historyItem.type) {
-    /*
-    case "create-reserve":
-      return (
-        <i18n.Translate wrap="p">
-          Bank requested reserve (<span>{abbrev(d.reservePub)}</span>) for{" "}
-          <span>{renderAmount(d.requestedAmount)}</span>.
-        </i18n.Translate>
-      );
-    case "confirm-reserve": {
-      const exchange = new URL(d.exchangeBaseUrl).host;
-      const pub = abbrev(d.reservePub);
-      return (
-        <i18n.Translate wrap="p">
-          Started to withdraw
-          <span>{renderAmount(d.requestedAmount)}</span>
-          from <span>{exchange}</span> (<span>{pub}</span>).
-        </i18n.Translate>
-      );
-    }
-    case "offer-contract": {
-      return (
-        <i18n.Translate wrap="p">
-          Merchant <em>{abbrev(d.merchantName, 15)}</em> offered contract{" "}
-          <span>{abbrev(d.contractTermsHash)}</span>.
-        </i18n.Translate>
-      );
-    }
-    case "depleted-reserve": {
-      const exchange = d.exchangeBaseUrl
-        ? new URL(d.exchangeBaseUrl).host
-        : "??";
-      const amount = renderAmount(d.requestedAmount);
-      const pub = abbrev(d.reservePub);
-      return (
-        <i18n.Translate wrap="p">
-          Withdrew <span>{amount}</span> from <span>{exchange}</span> (
-          <span>{pub}</span>).
-        </i18n.Translate>
-      );
-    }
-    case "pay": {
-      const url = d.fulfillmentUrl;
-      const merchantElem = <em>{abbrev(d.merchantName, 15)}</em>;
+   case "refreshed": {
+    return (
+      <HistoryItem
+        title={<i18n.Translate wrap={'p'}>Refresh sessions has completed</i18n.Translate>}
+      />
+    );
+   }
+
+   case "order-refused": {
+    const merchantElem = <em>{abbrev(historyItem.orderShortInfo.summary, 15)}</em>;
+    return (
+      <HistoryItem
+        title={<i18n.Translate wrap={Fragment}>Order Refused</i18n.Translate>}
+        text={(
+          <i18n.Translate wrap={Fragment}>
+            {" "}<span>{renderAmount(historyItem.orderShortInfo.amount)}</span> for <span>{merchantElem}</span>.
+          </i18n.Translate>
+        )}
+      />
+    );
+  }
+
+   case "order-redirected": {
+    const merchantElem = <em>{abbrev(historyItem.newOrderShortInfo.merchantBaseUrl, 25)}</em>;
+    return (
+      <HistoryItem
+        title={<i18n.Translate wrap={Fragment}>Order redirected <span>{merchantElem}</span>.</i18n.Translate>}
+      />
+    );
+   }
+
+   case "payment-aborted": {
+    const merchantElem = <em>{abbrev(historyItem.orderShortInfo.summary, 15)}</em>;
+    return (
+      <HistoryItem
+        title={<i18n.Translate wrap={Fragment}>Payment Aborted</i18n.Translate>}
+        text={(
+          <i18n.Translate wrap={Fragment}>
+            {" "}<span>{renderAmount(historyItem.orderShortInfo.amount)}</span> for <span>{merchantElem}</span>.
+          </i18n.Translate>
+        )}
+        small={<i18n.Translate wrap={Fragment}>Amount Lost: <span>{renderAmount(historyItem.amountLost)}</span></i18n.Translate>}
+      />
+    );
+   }
+
+   case "payment-sent": {
+    const url = historyItem.orderShortInfo.merchantBaseUrl;
+    const merchantElem = <em>{abbrev(historyItem.orderShortInfo.summary, 15)}</em>;
+    const fulfillmentLinkElem = (
+      <a href={historyItem.orderShortInfo.merchantBaseUrl} onClick={openTab(url)}>
+        <i18n.Translate wrap="span">View product</i18n.Translate>
+      </a>
+    );
+    return (
+      <HistoryItem
+        title={<i18n.Translate wrap={Fragment}>Payment Sent</i18n.Translate>}
+        text={(
+          <i18n.Translate wrap={Fragment}>
+            {" "}<span>{renderAmount(historyItem.orderShortInfo.amount)}</span> for <span>{merchantElem}</span>. <span>({fulfillmentLinkElem})</span>
+          </i18n.Translate>
+        )}
+        small={<i18n.Translate wrap={Fragment}>With fees: <span>{renderAmount(historyItem.amountPaidWithFees)}</span></i18n.Translate>}
+      />
+    );
+   }
+   case "order-accepted": {
+      const url = historyItem.orderShortInfo.merchantBaseUrl;
+      const merchantElem = <em>{abbrev(historyItem.orderShortInfo.summary, 15)}</em>;
       const fulfillmentLinkElem = (
-        <a href={url} onClick={openTab(url)}>
-          view product
+        <a href={historyItem.orderShortInfo.merchantBaseUrl} onClick={openTab(url)}>
+          <i18n.Translate wrap="span">View product</i18n.Translate>
         </a>
       );
       return (
-        <i18n.Translate wrap="p">
-          Paid <span>{renderAmount(d.amount)}</span> to merchant{" "}
-          <span>{merchantElem}</span>.<span> </span>(
-          <span>{fulfillmentLinkElem}</span>)
-        </i18n.Translate>
+        <HistoryItem
+          title={<i18n.Translate wrap={Fragment}>Order Accepted</i18n.Translate>}
+          text={(
+            <i18n.Translate>
+              {" "}<span>{renderAmount(historyItem.orderShortInfo.amount)}</span> for <span>{merchantElem}</span>. <span>({fulfillmentLinkElem})</span>
+            </i18n.Translate>
+          )}
+        />
+      );
+    }
+    case "reserve-balance-updated": {
+      return (
+        <HistoryItem
+          title={<i18n.Translate wrap={Fragment}>Reserve balance updated</i18n.Translate>}
+          text={(
+            <i18n.Translate wrap={Fragment}>
+              In exchange <span>{renderAmount(historyItem.amountReserveBalance)}</span> - Expected <span>{renderAmount(historyItem.amountExpected)}</span>
+            </i18n.Translate>
+          )}
+        />
       );
     }
     case "refund": {
-      const merchantElem = <em>{abbrev(d.merchantName, 15)}</em>;
+      const merchantElem = <em>{abbrev(historyItem.orderShortInfo.summary, 15)}</em>;
       return (
-        <i18n.Translate wrap="p">
-          Merchant <span>{merchantElem}</span> gave a refund over{" "}
-          <span>{renderAmount(d.refundAmount)}</span>.
-        </i18n.Translate>
+        <HistoryItem
+          title={<i18n.Translate wrap={Fragment}>Payment refund</i18n.Translate>}
+          text={(
+            <Fragment>
+              <i18n.Translate wrap={Fragment}>
+                {" "}<span>{renderAmount(historyItem.amountRefundedRaw)}</span> has been refunded to you for <span>{merchantElem}</span>.
+              </i18n.Translate>
+              {notCero(historyItem.amountRefundedInvalid)
+                ? <i18n.Translate wrap={"p"}>
+                    {" "}<span>{renderAmount(historyItem.amountRefundedInvalid)}</span> couldn't be refunded because the permissions have expired.</i18n.Translate> 
+                : null 
+              }
+              <i18n.Translate wrap={"p"}>
+                {" "}<span>{renderAmount(historyItem.amountRefundedEffective)}</span> will be added to the wallet's balance after fees and refreshing.
+              </i18n.Translate>
+            </Fragment>
+          )}
+        />
+      );
+     }
+   case "withdrawn": {
+      const exchange = new URL(historyItem.exchangeBaseUrl).host;
+      return (
+        <HistoryItem
+          title={<i18n.Translate wrap={Fragment}>Withdraw</i18n.Translate>}
+          text={(
+            <i18n.Translate wrap={Fragment}>
+              {" "}<span>{renderAmount(historyItem.amountWithdrawnEffective)}</span> from <span>{exchange}</span>.
+            </i18n.Translate>
+          )}
+        />
       );
     }
-    case "tip": {
-      const tipPageUrl = new URL(chrome.extension.getURL("/src/webex/pages/tip.html"));
-      tipPageUrl.searchParams.set("tip_id", d.tipId);
-      tipPageUrl.searchParams.set("merchant_domain", d.merchantDomain);
-      const url = tipPageUrl.href;
-      const tipLink = <a href={url} onClick={openTab(url)}>{i18n.str`tip`}</a>;
-      // i18n: Tip
+    case "tip-accepted": {
       return (
-        <>
-          <i18n.Translate wrap="p">
-            Merchant <span>{d.merchantDomain}</span> gave a{" "}
-            <span>{tipLink}</span> of <span>{renderAmount(d.amount)}</span>.
-          </i18n.Translate>
-          <span>
-            {" "}
-            {d.accepted ? null : (
-              <i18n.Translate>You did not accept the tip yet.</i18n.Translate>
-            )}
-          </span>
-        </>
+        <HistoryItem
+          title={<i18n.Translate wrap={Fragment}>Tip Accepted</i18n.Translate>}
+          text={(
+            <i18n.Translate wrap={Fragment}>
+              {" "}<span>{renderAmount(historyItem.tipRaw)}</span>
+            </i18n.Translate>
+          )}
+        />
       );
     }
-    */
+    case "tip-declined": {
+      return (
+        <HistoryItem
+          title={<i18n.Translate wrap={Fragment}>Tip Declined</i18n.Translate>}
+          text={(
+            <i18n.Translate wrap={Fragment}>
+              {" "}<span>{renderAmount(historyItem.tipAmount)}</span>
+            </i18n.Translate>
+          )}
+        />
+      );
+    }
     default:
-      return <p>{i18n.str`Unknown event (${historyItem.type})`}</p>;
+      return (
+        <HistoryItem
+          title={i18n.str`Unknown event (${historyItem.type})`}
+        />
+      )
   }
 }
 
@@ -472,7 +573,7 @@ class WalletHistory extends React.Component<any, any> {
       const item = (
         <div className="historyItem">
           <div className="historyDate">
-            {new Date(record.timestamp.t_ms).toString()}
+            {moment(record.timestamp.t_ms).format('LLL')}
           </div>
           {formatHistoryItem(record)}
         </div>
