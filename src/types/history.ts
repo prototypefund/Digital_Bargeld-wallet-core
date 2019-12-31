@@ -162,7 +162,7 @@ export interface HistoryTipAcceptedEvent {
  * History event to indicate that the user has accepted a tip.
  */
 export interface HistoryTipDeclinedEvent {
-  type: HistoryEventType.TipAccepted;
+  type: HistoryEventType.TipDeclined;
 
   /**
    * Point in time when the tip has been declined.
